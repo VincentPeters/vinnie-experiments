@@ -1,0 +1,51 @@
+---
+// src/components/PostList.astro
+import { getCollection, type CollectionEntry } from "astro:content";
+import { isProduction } from "../lib/build-context";
+
+type Post = CollectionEntry<"posts">;
+
+const all: Post[] = await getCollection("posts", ({ data }) => {
+  if (!data.draft) return true;
+  return !isProduction();
+});
+
+const sorted = all.sort(
+  (a, b) => b.data.date.getTime() - a.data.date.getTime(),
+);
+
+const byYear = new Map<number, Post[]>();
+for (const post of sorted) {
+  const y = post.data.date.getFullYear();
+  if (!byYear.has(y)) byYear.set(y, []);
+  byYear.get(y)!.push(post);
+}
+
+const fmt = (d: Date) =>
+  `${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+const slugFor = (post: Post) => post.data.slug ?? post.id;
+---
+
+<div class="post-list">
+  {
+    [...byYear.entries()].map(([year, posts]) => (
+      <section>
+        <h2 class="year">{year}</h2>
+        <table>
+          <tbody>
+            {posts.map((post) => (
+              <tr>
+                <td class="date">{fmt(post.data.date)}</td>
+                <td class="bucket">{post.data.bucket === "meta" ? "·" : post.data.bucket}</td>
+                <td>
+                  <a href={`/posts/${slugFor(post)}/`}>{post.data.title}</a>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </section>
+    ))
+  }
+</div>
