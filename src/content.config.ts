@@ -4,7 +4,12 @@ import { glob } from "astro/loaders";
 const BUCKETS = ["A", "B", "C", "D", "E", "F", "meta"] as const;
 
 const posts = defineCollection({
-  loader: glob({ pattern: "**/*.{md,mdx}", base: "./src/content/posts" }),
+  loader: glob({
+    pattern: "**/*.{md,mdx}",
+    base: "./src/content/posts",
+    // Filename is "YYYY-MM-DD-slug.md" for ls sortability; URL uses just the slug.
+    generateId: ({ entry }) => entry.replace(/^\d{4}-\d{2}-\d{2}-/, "").replace(/\.(md|mdx)$/, ""),
+  }),
   schema: ({ image }) =>
     z.object({
       title: z.string().min(1).max(120),
