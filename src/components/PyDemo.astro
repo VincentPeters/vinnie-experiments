@@ -1,0 +1,114 @@
+---
+// src/components/PyDemo.astro
+type Input =
+  | { name: string; type: "range" | "number"; min?: number; max?: number; step?: number; value?: number; label?: string }
+  | { name: string; type: "select"; options: string[]; value?: string; label?: string }
+  | { name: string; type: "checkbox"; value?: boolean; label?: string }
+  | { name: string; type: "text"; value?: string; label?: string };
+
+interface Props {
+  packages?: string[];
+  inputs?: Input[];
+  setup?: string;
+  code: string;
+  title?: string;
+}
+
+const { packages = [], inputs = [], setup = "", code, title } = Astro.props;
+---
+
+<section
+  class="pydemo"
+  data-pydemo
+  data-pydemo-packages={JSON.stringify(packages)}
+  data-pydemo-setup={setup}
+  data-pydemo-code={code}
+>
+  {title && <h3>{title}</h3>}
+  <pre><code class="language-python">{code.trim()}</code></pre>
+  <form data-pydemo-form onsubmit="event.preventDefault()">
+    {
+      inputs.map((inp) => {
+        const label = inp.label ?? inp.name;
+        if (inp.type === "range" || inp.type === "number") {
+          return (
+            <label>
+              <span>{label}</span>
+              <input
+                type={inp.type}
+                name={inp.name}
+                min={inp.min}
+                max={inp.max}
+                step={inp.step}
+                value={inp.value ?? 0}
+              />
+            </label>
+          );
+        }
+        if (inp.type === "select") {
+          return (
+            <label>
+              <span>{label}</span>
+              <select name={inp.name}>
+                {inp.options.map((opt) => (
+                  <option value={opt} selected={opt === inp.value}>{opt}</option>
+                ))}
+              </select>
+            </label>
+          );
+        }
+        if (inp.type === "checkbox") {
+          return (
+            <label>
+              <input type="checkbox" name={inp.name} checked={inp.value ?? false} />
+              <span>{label}</span>
+            </label>
+          );
+        }
+        return (
+          <label>
+            <span>{label}</span>
+            <input type="text" name={inp.name} value={inp.value ?? ""} />
+          </label>
+        );
+      })
+    }
+    <button data-pydemo-run type="button">▶ run</button>
+    <span data-pydemo-status class="meta"></span>
+  </form>
+  <div data-pydemo-out></div>
+</section>
+
+<script>
+  import "./PyDemoIsland";
+</script>
+
+<style>
+  .pydemo {
+    border: 1px solid var(--muted);
+    padding: var(--s-3);
+    margin: var(--s-4) 0;
+  }
+  .pydemo form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-3);
+    align-items: center;
+    margin: var(--s-3) 0;
+  }
+  .pydemo label {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--s-2);
+    font-size: 0.95em;
+  }
+  .pydemo input[type="range"] {
+    width: 12rem;
+  }
+  .pydemo [data-pydemo-out]:empty {
+    display: none;
+  }
+  .pydemo [data-pydemo-out] {
+    margin-top: var(--s-3);
+  }
+</style>
