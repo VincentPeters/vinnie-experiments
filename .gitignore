@@ -2,6 +2,7 @@ node_modules/
 dist/
 .astro/
 .wrangler/
+public/pyodide/
 .env
 .env.local
 .DS_Store
