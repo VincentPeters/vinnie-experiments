@@ -1,0 +1,110 @@
+---
+// src/components/Layout.astro
+import "../styles/global.css";
+import { SITE, NAV } from "../lib/site";
+import { isProduction } from "../lib/build-context";
+
+interface Props {
+  title?: string;
+  description?: string;
+  ogImage?: string;
+}
+
+const { title, description, ogImage } = Astro.props;
+const fullTitle = title ? `${title} · ${SITE.title}` : SITE.title;
+const desc = description ?? SITE.description;
+const og = ogImage ?? `${SITE.url}/og-default.png`;
+const canonical = new URL(Astro.url.pathname, SITE.url).toString();
+const showAnalytics = isProduction();
+const cfaToken = import.meta.env.PUBLIC_CF_WEB_ANALYTICS_TOKEN;
+---
+
+<!doctype html>
+<html lang={SITE.locale}>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="generator" content={Astro.generator} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="canonical" href={canonical} />
+    <link rel="alternate" type="application/rss+xml" title={SITE.title} href="/rss.xml" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={desc} />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={desc} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={og} />
+    <meta property="og:type" content="article" />
+    <meta name="twitter:card" content="summary_large_image" />
+    {!showAnalytics && <meta name="robots" content="noindex" />}
+    <script is:inline>
+      (() => {
+        try {
+          const stored = localStorage.getItem("theme");
+          const prefers = window.matchMedia("(prefers-color-scheme: dark)").matches;
+          const theme = stored ?? (prefers ? "dark" : "light");
+          document.documentElement.setAttribute("data-theme", theme);
+        } catch {}
+      })();
+    </script>
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="wordmark" href="/">{SITE.title}</a>
+      <div class="subtitle meta">{SITE.subtitle}</div>
+      <nav>
+        <ul>
+          {
+            NAV.map((item) => (
+              <li>
+                <a href={item.href}>{item.label}</a>
+              </li>
+            ))
+          }
+          <li>
+            <button class="theme-toggle" type="button" data-theme-toggle>
+              [<span data-theme-label>dark</span>]
+            </button>
+          </li>
+        </ul>
+      </nav>
+    </header>
+    <main class="content">
+      <slot />
+    </main>
+    <footer class="site-footer">
+      © {new Date().getFullYear()} {SITE.author} · code MIT · prose CC-BY-SA · last build {
+        SITE.buildDate
+      } · <a href={SITE.github}>github</a>
+    </footer>
+    <script is:inline>
+      (() => {
+        const btn = document.querySelector("[data-theme-toggle]");
+        const label = document.querySelector("[data-theme-label]");
+        const sync = () => {
+          const current = document.documentElement.getAttribute("data-theme") ?? "light";
+          if (label) label.textContent = current === "dark" ? "light" : "dark";
+        };
+        sync();
+        btn?.addEventListener("click", () => {
+          const current = document.documentElement.getAttribute("data-theme") ?? "light";
+          const next = current === "dark" ? "light" : "dark";
+          document.documentElement.setAttribute("data-theme", next);
+          try {
+            localStorage.setItem("theme", next);
+          } catch {}
+          sync();
+        });
+      })();
+    </script>
+    {
+      showAnalytics && cfaToken && (
+        <script
+          defer
+          src="https://static.cloudflareinsights.com/beacon.min.js"
+          data-cf-beacon={`{"token": "${cfaToken}"}`}
+        />
+      )
+    }
+  </body>
+</html>
