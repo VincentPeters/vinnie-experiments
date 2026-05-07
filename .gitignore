@@ -8,3 +8,7 @@ dist/
 !.vscode/extensions.json
 .idea/
 *.log
+
+# Claude Code (local-only)
+.claude/settings.json
+.claude/settings.local.json
