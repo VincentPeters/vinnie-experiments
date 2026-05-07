@@ -1,0 +1,41 @@
+---
+// src/pages/about.astro
+import Layout from "../components/Layout.astro";
+import { SITE } from "../lib/site";
+---
+
+<Layout title="about" description={`About ${SITE.author} and ${SITE.title}.`}>
+  <article>
+    <h1>about</h1>
+    <p>
+      {SITE.title} is the public lab notebook of <a href={SITE.portfolio}>{SITE.author}</a>,
+      a developer and educator based in Antwerp. Projects in data science,
+      AI, IoT, web platforms, and the occasional cultural side-project.
+    </p>
+    <h2>format</h2>
+    <p>
+      Posts use one of four formats: build-along, post-mortem, paper summary,
+      or weeknote. Each project post follows an explicit method section
+      (question · data · procedure · metric · result · limits).
+    </p>
+    <h2>buckets</h2>
+    <p>The bucket column in the listing tags each post by category:</p>
+    <table>
+      <tbody>
+        <tr><td><strong>A</strong></td><td>niche projects (mobility, inland shipping, e-bike, edge IoT, circular, cultural-public data)</td></tr>
+        <tr><td><strong>B</strong></td><td>reuse projects (existing artefacts as research field)</td></tr>
+        <tr><td><strong>C</strong></td><td>classical ML on messy real-world data</td></tr>
+        <tr><td><strong>D</strong></td><td>methodology and statistics projects</td></tr>
+        <tr><td><strong>E</strong></td><td>writing and reading (paper summaries, proposals)</td></tr>
+        <tr><td><strong>F</strong></td><td>cultural, absurd, installation</td></tr>
+      </tbody>
+    </table>
+    <h2>colophon</h2>
+    <p>
+      Built with Astro on Cloudflare Pages. Source on
+      <a href={SITE.github}>GitHub</a>. Code MIT, prose CC-BY-SA. Cookieless
+      analytics via Cloudflare Web Analytics. Interactive Python demos run
+      client-side in Pyodide; nothing is sent to a server.
+    </p>
+  </article>
+</Layout>
