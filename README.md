@@ -2,7 +2,7 @@
 
 Public space for experiments and a blog by Vincent Peters — Studio Vinnie.
 
-Hands-on, demo-driven write-ups about data science, AI, IoT, web platforms, and the occasional cultural side-project.
+Hands-on, demo-driven write-ups about data science, AI, IoT, web platforms, and the occasional off beat side-project.
 
 - Portfolio: <https://vinnie.studio>
 - Blog: <https://blog.vinnie.studio>
