@@ -12,9 +12,9 @@ let pyodide: any = null;
 let pendingPackages = new Set<string>();
 let installedPackages = new Set<string>();
 
-// Pyodide assets are copied to /public/pyodide/v<MAJOR>.<MINOR>.x/ by
-// scripts/copy-pyodide.mjs. Update this constant when bumping pyodide.
-const pyodideIndexURL = "/pyodide/v0.27.x/";
+// Pyodide is served from jsdelivr's CDN. Bump the version segment when
+// upgrading the pyodide npm dep so the runtime and wheels stay in sync.
+const pyodideIndexURL = "https://cdn.jsdelivr.net/pyodide/v0.27.7/full/";
 
 async function init(packages: string[]): Promise<void> {
   if (!pyodide) {

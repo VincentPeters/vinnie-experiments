@@ -7,10 +7,9 @@
   },
   "scripts": {
     "dev": "astro dev",
-    "build": "node scripts/copy-pyodide.mjs && astro build",
+    "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
-    "postinstall": "node scripts/copy-pyodide.mjs",
     "test": "playwright test",
     "test:ui": "playwright test --ui"
   },

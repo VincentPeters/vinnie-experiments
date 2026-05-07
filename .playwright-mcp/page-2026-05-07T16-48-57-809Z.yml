@@ -1,0 +1,59 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - link "vinnie-experiments" [ref=e3] [cursor=pointer]:
+      - /url: /
+    - generic [ref=e4]: research notes · vincent peters · studio vinnie
+    - navigation [ref=e5]:
+      - list [ref=e6]:
+        - listitem [ref=e7]:
+          - link "posts" [ref=e8] [cursor=pointer]:
+            - /url: /
+          - text: ·
+        - listitem [ref=e9]:
+          - link "about" [ref=e10] [cursor=pointer]:
+            - /url: /about
+          - text: ·
+        - listitem [ref=e11]:
+          - link "rss" [ref=e12] [cursor=pointer]:
+            - /url: /rss.xml
+          - text: ·
+        - listitem [ref=e13]:
+          - link "github" [ref=e14] [cursor=pointer]:
+            - /url: https://github.com/VincentPeters/vinnie-experiments
+          - text: ·
+        - listitem [ref=e15]:
+          - button "[dark]" [ref=e16] [cursor=pointer]
+  - main [ref=e17]:
+    - article [ref=e18]:
+      - heading "demo test" [level=1] [ref=e19]
+      - paragraph [ref=e20]: Not a real post. Lives at /demo-test/ to verify PyDemo end to end.
+      - heading "1. numpy + plotly" [level=2] [ref=e21]
+      - generic [ref=e22]:
+        - code [ref=e24]: "rng = np.random.default_rng(seed) x = np.linspace(0, 10, n) y = np.sin(x) + rng.normal(0, noise, n) plot_xy(x, y, title=f\"sin + N(0, {noise}) noise, n={n}\", mode=\"markers\")"
+        - generic [ref=e25]:
+          - generic [ref=e26]:
+            - generic [ref=e27]: noise
+            - slider "noise" [ref=e28]: "0.2"
+          - generic [ref=e29]:
+            - generic [ref=e30]: "n"
+            - spinbutton "n" [ref=e31]: "400"
+          - generic [ref=e32]:
+            - generic [ref=e33]: seed
+            - spinbutton "seed" [ref=e34]: "42"
+          - button "▶ run" [ref=e35]
+      - heading "2. plain print and markdown" [level=2] [ref=e36]
+      - generic [ref=e37]:
+        - code [ref=e39]: "print(f\"hello, {name}\") print_md(\"this is **bold** in markdown text emit\")"
+        - generic [ref=e40]:
+          - generic [ref=e41]:
+            - generic [ref=e42]: name
+            - textbox "name" [ref=e43]: world
+          - button "▶ run" [ref=e44]
+      - heading "3. error path" [level=2] [ref=e45]
+      - generic [ref=e46]:
+        - code [ref=e48]: raise ValueError("intentional smoke-test error")
+        - button "▶ run" [ref=e50]
+  - contentinfo [ref=e51]:
+    - text: © 2026 Vincent Peters · code MIT · prose CC-BY-SA · last build 2026-05-07 ·
+    - link "github" [ref=e52] [cursor=pointer]:
+      - /url: https://github.com/VincentPeters/vinnie-experiments
