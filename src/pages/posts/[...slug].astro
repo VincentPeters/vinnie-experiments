@@ -1,0 +1,37 @@
+---
+// src/pages/posts/[...slug].astro
+import { type CollectionEntry, getCollection, render } from "astro:content";
+import Layout from "../../components/Layout.astro";
+import { isProduction } from "../../lib/build-context";
+
+export async function getStaticPaths() {
+  const posts = await getCollection("posts", ({ data }) => {
+    if (!data.draft) return true;
+    return !isProduction();
+  });
+  return posts.map((post) => ({
+    params: { slug: post.data.slug ?? post.id },
+    props: { post },
+  }));
+}
+
+type Props = { post: CollectionEntry<"posts"> };
+const { post } = Astro.props;
+const { Content } = await render(post);
+const fmt = (d: Date) => d.toISOString().slice(0, 10);
+---
+
+<Layout title={post.data.title} description={post.data.description}>
+  <article>
+    <header>
+      <h1>{post.data.title}</h1>
+      <p class="meta">
+        {fmt(post.data.date)}
+        {post.data.updated && <> · updated {fmt(post.data.updated)}</>}
+        · bucket {post.data.bucket}
+        {post.data.tags.length > 0 && <> · {post.data.tags.join(" · ")}</>}
+      </p>
+    </header>
+    <Content />
+  </article>
+</Layout>
