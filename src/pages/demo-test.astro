@@ -1,0 +1,50 @@
+---
+// src/pages/demo-test.astro
+// Evergreen smoke page for <PyDemo>. Not in the post listing, not in the sitemap.
+import Layout from "../components/Layout.astro";
+import PyDemo from "../components/PyDemo.astro";
+---
+
+<Layout title="demo test" description="Smoke-test page for the PyDemo widget. Not a real post.">
+  <article>
+    <h1>demo test</h1>
+    <p class="meta">Not a real post. Lives at /demo-test/ to verify PyDemo end to end.</p>
+
+    <h2>1. numpy + plotly</h2>
+    <PyDemo
+      packages={["numpy"]}
+      inputs={[
+        { name: "noise", type: "range", min: 0, max: 1, step: 0.01, value: 0.2, label: "noise" },
+        { name: "n", type: "number", min: 50, max: 2000, value: 400, label: "n" },
+        { name: "seed", type: "number", value: 42, label: "seed" },
+      ]}
+      setup={`
+import numpy as np
+`}
+      code={`
+rng = np.random.default_rng(seed)
+x = np.linspace(0, 10, n)
+y = np.sin(x) + rng.normal(0, noise, n)
+plot_xy(x, y, title=f"sin + N(0, {noise}) noise, n={n}", mode="markers")
+`}
+    />
+
+    <h2>2. plain print and markdown</h2>
+    <PyDemo
+      inputs={[
+        { name: "name", type: "text", value: "world", label: "name" },
+      ]}
+      code={`
+print(f"hello, {name}")
+print_md("this is **bold** in markdown text emit")
+`}
+    />
+
+    <h2>3. error path</h2>
+    <PyDemo
+      code={`
+raise ValueError("intentional smoke-test error")
+`}
+    />
+  </article>
+</Layout>

@@ -6,7 +6,12 @@ import sitemap from "@astrojs/sitemap";
 export default defineConfig({
   site: "https://blog.vinnie.studio",
   output: "static",
-  integrations: [mdx(), sitemap()],
+  integrations: [
+    mdx(),
+    sitemap({
+      filter: (page) => !page.includes("/demo-test"),
+    }),
+  ],
   env: {
     schema: {
       CF_PAGES_BRANCH: envField.string({
