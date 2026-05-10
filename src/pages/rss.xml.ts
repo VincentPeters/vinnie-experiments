@@ -17,11 +17,14 @@ export async function GET(context: APIContext) {
     title: SITE.title,
     description: SITE.description,
     site: context.site ?? SITE.url,
+    stylesheet: "/rss-styles.xsl",
+    customData: `<language>${SITE.locale}</language>`,
     items: sorted.map((post) => ({
       title: post.data.title,
       pubDate: post.data.date,
       description: post.data.description,
       link: `/posts/${post.data.slug ?? post.id}/`,
+      categories: [post.data.bucket, ...post.data.tags],
     })),
   });
 }

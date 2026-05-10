@@ -1,7 +1,8 @@
 // src/lib/site.ts
 export const SITE = {
   title: "vinnie-experiments",
-  subtitle: "research notes · vincent peters · studio vinnie",
+  subtitle:
+    "a public lab notebook on data science, AI, IoT, and the occasional side-project.",
   description:
     "Hands-on, demo-driven write-ups about data science, AI, IoT, web platforms, and the occasional cultural side-project.",
   author: "Vincent Peters",
@@ -18,3 +19,11 @@ export const NAV: ReadonlyArray<{ label: string; href: string }> = [
   { label: "rss", href: "/rss.xml" },
   { label: "github", href: SITE.github },
 ];
+
+/**
+ * Feature flags. Flip to hide/show optional UI without ripping out the code.
+ */
+export const FLAGS = {
+  /** Show the bucket filter bar on the homepage. */
+  showBucketFilter: false,
+} as const;

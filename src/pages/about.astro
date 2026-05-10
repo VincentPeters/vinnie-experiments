@@ -5,37 +5,93 @@ import { SITE } from "../lib/site";
 ---
 
 <Layout title="about" description={`About ${SITE.author} and ${SITE.title}.`}>
-  <article>
-    <h1>about</h1>
-    <p>
-      {SITE.title} is the public lab notebook of <a href={SITE.portfolio}>{SITE.author}</a>,
-      a developer and educator based in Antwerp. Projects in data science,
-      AI, IoT, web platforms, and the occasional cultural side-project.
+  <article class="about-body">
+    <p class="post-apparatus">
+      <span>colophon and the bucket glossary</span>
     </p>
-    <h2>format</h2>
-    <p>
-      Posts use one of four formats: build-along, post-mortem, paper summary,
-      or weeknote. Each project post follows an explicit method section
-      (question · data · procedure · metric · result · limits).
+    <h1 class="post-title">about</h1>
+    <p class="post-dek">
+      A public lab notebook by <a href={SITE.portfolio}>{SITE.author}</a>, a
+      developer and educator based in Antwerp. Hands-on, demo-driven write-ups
+      on data science, AI, IoT, web platforms, and the occasional cultural
+      side-project.
     </p>
-    <h2>buckets</h2>
-    <p>The bucket column in the listing tags each post by category:</p>
+
+    <h2 id="format">Format</h2>
+    <p>
+      Posts use one of four formats: <em>build-along</em>, <em>post-mortem</em>,
+      <em>paper summary</em>, or <em>weeknote</em>. Each project post follows
+      an explicit method section. Question, data, procedure, metric, result,
+      limits. Set apart from the body by hairline rules and mono labels.
+    </p>
+
+    <h2 id="buckets">Buckets</h2>
+    <p>
+      The single-letter code in the listing tags each post by category. There
+      is no hierarchy among the buckets; the letters are an index, not a rank.
+    </p>
     <table>
       <tbody>
-        <tr><td><strong>A</strong></td><td>niche projects (mobility, inland shipping, e-bike, edge IoT, circular, cultural-public data)</td></tr>
-        <tr><td><strong>B</strong></td><td>reuse projects (existing artefacts as research field)</td></tr>
-        <tr><td><strong>C</strong></td><td>classical ML on messy real-world data</td></tr>
-        <tr><td><strong>D</strong></td><td>methodology and statistics projects</td></tr>
-        <tr><td><strong>E</strong></td><td>writing and reading (paper summaries, proposals)</td></tr>
-        <tr><td><strong>F</strong></td><td>cultural, absurd, installation</td></tr>
+        <tr>
+          <td><strong>A</strong></td>
+          <td>
+            <em>niche</em>. Mobility, inland shipping, e-bike, edge IoT,
+            circular, cultural-public data
+          </td>
+        </tr>
+        <tr>
+          <td><strong>B</strong></td>
+          <td>
+            <em>reuse</em>. Existing artefacts (Switch-to-EU, Commensradio,
+            Gaming API, etc.) treated as research field
+          </td>
+        </tr>
+        <tr>
+          <td><strong>C</strong></td>
+          <td><em>classical ML</em> on messy real-world data</td>
+        </tr>
+        <tr>
+          <td><strong>D</strong></td>
+          <td>
+            <em>methodology and statistics</em>. A/B tests, hypothesis tests,
+            effect sizes, intervals
+          </td>
+        </tr>
+        <tr>
+          <td><strong>E</strong></td>
+          <td>
+            <em>writing and reading</em>. Paper summaries, proposal drafts,
+            re-framings of older work
+          </td>
+        </tr>
+        <tr>
+          <td><strong>F</strong></td>
+          <td><em>cultural</em>. Absurd, installation, off-beat</td>
+        </tr>
+        <tr>
+          <td>·</td>
+          <td><em>meta</em>. About this site, stack notes, weeknotes</td>
+        </tr>
       </tbody>
     </table>
-    <h2>colophon</h2>
+
+    <h2 id="colophon">Colophon</h2>
     <p>
-      Built with Astro on Cloudflare Pages. Source on
-      <a href={SITE.github}>GitHub</a>. Code MIT, prose CC-BY-SA. Cookieless
-      analytics via Cloudflare Web Analytics. Interactive Python demos run
-      client-side in Pyodide; nothing is sent to a server.
+      Built with <a href="https://astro.build">Astro</a> on Cloudflare Pages.
+      Source on <a href={SITE.github}>GitHub</a>. Code MIT, prose CC-BY-SA.
+      Cookieless analytics via Cloudflare Web Analytics. Interactive Python
+      demos run client-side in <a href="https://pyodide.org">Pyodide</a>;
+      nothing is sent to a server.
+    </p>
+    <p>
+      Type set in <em>Source Serif 4</em> (body, Adobe, OFL),
+      <em>Switzer</em> (display and UI, Indian Type Foundry, Fontshare), and
+      <em>JetBrains Mono</em> (apparatus and code). Three families, three jobs.
+      Color in OKLCH throughout. No box-shadows, by doctrine.
+    </p>
+    <p>
+      <a href="/rss.xml">Subscribe by RSS</a>. Or check back when you remember
+      to. The cadence is biweekly when it is on, monthly when it is not.
     </p>
   </article>
 </Layout>

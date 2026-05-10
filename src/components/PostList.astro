@@ -27,25 +27,43 @@ const fmt = (d: Date) =>
 const slugFor = (post: Post) => post.data.slug ?? post.id;
 ---
 
-<div class="post-list">
+<section aria-label="post listing" data-listing>
   {
     [...byYear.entries()].map(([year, posts]) => (
-      <section>
-        <h2 class="year">{year}</h2>
-        <table>
-          <tbody>
-            {posts.map((post) => (
-              <tr>
-                <td class="date">{fmt(post.data.date)}</td>
-                <td class="bucket">{post.data.bucket === "meta" ? "·" : post.data.bucket}</td>
-                <td>
-                  <a href={`/posts/${slugFor(post)}/`}>{post.data.title}</a>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <section
+        class="year-block"
+        data-year-block
+        aria-label={`posts from ${year}`}
+      >
+        <h2 class="year-marker">
+          {year}
+          <span class="count" data-year-count>
+            · {posts.length} {posts.length === 1 ? "entry" : "entries"}
+          </span>
+        </h2>
+        <ol class="post-list">
+          {posts.map((post) => (
+            <li class="post-row" data-bucket={post.data.bucket}>
+              <span class="row-date">{fmt(post.data.date)}</span>
+              <span
+                class={`row-bucket ${post.data.bucket === "meta" ? "bucket-meta" : ""}`}
+                aria-label={`bucket ${post.data.bucket}`}
+              >
+                {post.data.bucket === "meta" ? "·" : post.data.bucket}
+              </span>
+              <span class="row-title">
+                <a href={`/posts/${slugFor(post)}/`}>{post.data.title}</a>
+                {post.data.draft && <span class="row-draft">draft</span>}
+                <span class="row-desc">{post.data.description}</span>
+              </span>
+            </li>
+          ))}
+        </ol>
       </section>
     ))
   }
-</div>
+
+  <p class="empty-state" data-empty hidden>
+    no entries in this bucket yet.
+  </p>
+</section>

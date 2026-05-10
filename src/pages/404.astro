@@ -3,10 +3,21 @@
 import Layout from "../components/Layout.astro";
 ---
 
-<Layout title="404" description="That page does not exist on vinnie-experiments.">
-  <article>
-    <h1>404</h1>
-    <p>That page does not exist.</p>
-    <p><a href="/">← back to posts</a></p>
-  </article>
+<Layout title="not found" description="That page does not exist.">
+  <div class="notfound">
+    <p class="stamp">404 · not found</p>
+    <h1>That page is not in the notebook.</h1>
+    <p>
+      You followed a link that points at something that has been renamed,
+      removed, or never written. The <a href="/">listing</a> is the canonical
+      index of what does exist; the <a href="/about/">about page</a> explains
+      the bucket codes.
+    </p>
+    <p>
+      If you got here from a link on this site, that is a bug. Please <a
+        href="https://github.com/VincentPeters/vinnie-experiments/issues"
+        >open an issue</a
+      >.
+    </p>
+  </div>
 </Layout>

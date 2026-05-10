@@ -8,15 +8,26 @@ interface Props {
   title?: string;
   description?: string;
   ogImage?: string;
+  bare?: boolean;
 }
 
-const { title, description, ogImage } = Astro.props;
+const { title, description, ogImage, bare = false } = Astro.props;
 const fullTitle = title ? `${title} · ${SITE.title}` : SITE.title;
 const desc = description ?? SITE.description;
 const og = ogImage ?? `${SITE.url}/og-default.png`;
 const canonical = new URL(Astro.url.pathname, SITE.url).toString();
 const showAnalytics = isProduction();
 const cfaToken = import.meta.env.PUBLIC_CF_WEB_ANALYTICS_TOKEN;
+
+const currentPath = Astro.url.pathname.replace(/\/+$/, "") || "/";
+const isCurrent = (href: string) => {
+  const norm = href.replace(/\/+$/, "") || "/";
+  if (norm === "/") return currentPath === "/";
+  if (norm.startsWith("http")) return false;
+  return currentPath === norm;
+};
+
+const [wordA, wordB] = SITE.title.split("-");
 ---
 
 <!doctype html>
@@ -27,7 +38,15 @@ const cfaToken = import.meta.env.PUBLIC_CF_WEB_ANALYTICS_TOKEN;
     <meta name="generator" content={Astro.generator} />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="canonical" href={canonical} />
-    <link rel="alternate" type="application/rss+xml" title={SITE.title} href="/rss.xml" />
+    <link
+      rel="alternate"
+      type="application/rss+xml"
+      title={SITE.title}
+      href="/rss.xml"
+    />
+    <link rel="preload" href="/fonts/SourceSerif4-400.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/Switzer-700.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/JetBrainsMono-400.woff2" as="font" type="font/woff2" crossorigin />
     <title>{fullTitle}</title>
     <meta name="description" content={desc} />
     <meta property="og:title" content={fullTitle} />
@@ -50,33 +69,64 @@ const cfaToken = import.meta.env.PUBLIC_CF_WEB_ANALYTICS_TOKEN;
   </head>
   <body>
     <header class="site-header">
-      <a class="wordmark" href="/">{SITE.title}</a>
-      <div class="subtitle meta">{SITE.subtitle}</div>
-      <nav>
-        <ul>
-          {
-            NAV.map((item) => (
-              <li>
-                <a href={item.href}>{item.label}</a>
+      <div class="site-header-brand">
+        <div class="site-header-inner">
+          <a class="wordmark" href="/" aria-label={SITE.title}>
+            {wordA}<span class="signal">-</span>{wordB}
+          </a>
+          <p class="subtitle">{SITE.subtitle}</p>
+        </div>
+      </div>
+      <div class="site-header-nav">
+        <div class="site-header-inner">
+          <nav class="site-nav" aria-label="primary">
+            <ul>
+              {
+                NAV.map((item) => (
+                  <li>
+                    <a
+                      href={item.href}
+                      aria-current={isCurrent(item.href) ? "page" : undefined}
+                    >
+                      {item.label}
+                    </a>
+                  </li>
+                ))
+              }
+              <li class="theme-toggle-li">
+                <button class="theme-toggle" type="button" data-theme-toggle>
+                  <span class="bracket">[</span>
+                  <span data-theme-label>dark</span>
+                  <span class="bracket">]</span>
+                </button>
               </li>
-            ))
-          }
-          <li>
-            <button class="theme-toggle" type="button" data-theme-toggle>
-              [<span data-theme-label>dark</span>]
-            </button>
-          </li>
-        </ul>
-      </nav>
+            </ul>
+          </nav>
+        </div>
+      </div>
     </header>
-    <main class="content">
-      <slot />
-    </main>
+
+    {bare ? <slot /> : (
+      <main class="shell">
+        <slot />
+      </main>
+    )}
+
     <footer class="site-footer">
-      © {new Date().getFullYear()} {SITE.author} · code MIT · prose CC-BY-SA · last build {
-        SITE.buildDate
-      } · <a href={SITE.github}>github</a>
+      <div class="site-footer-inner">
+        <span class="signature">
+          a public lab notebook by <a href={SITE.portfolio}>{SITE.author}</a>.
+        </span>
+        <span class="colophon">
+          <span>© {new Date().getFullYear()}</span>
+          <span>code MIT, prose CC-BY-SA</span>
+          <span>build {SITE.buildDate}</span>
+          <a href={SITE.github}>github</a>
+          <a href="/rss.xml">rss</a>
+        </span>
+      </div>
     </footer>
+
     <script is:inline>
       (() => {
         const btn = document.querySelector("[data-theme-toggle]");

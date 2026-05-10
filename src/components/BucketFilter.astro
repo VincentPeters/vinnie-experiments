@@ -1,0 +1,96 @@
+---
+// src/components/BucketFilter.astro
+import { getCollection } from "astro:content";
+import { isProduction } from "../lib/build-context";
+import { BUCKETS } from "../content.config";
+
+const all = await getCollection("posts", ({ data }) => {
+  if (!data.draft) return true;
+  return !isProduction();
+});
+
+const counts: Record<string, number> = {};
+for (const p of all) {
+  counts[p.data.bucket] = (counts[p.data.bucket] ?? 0) + 1;
+}
+const allCount = all.length;
+---
+
+<div class="site-filter-bar">
+  <div class="site-header-inner">
+    <nav class="bucket-filter" aria-label="filter by bucket" data-filter-bar>
+      <span class="label">filter</span>
+      <a class="all" href="/" data-filter="" aria-current="true">
+        all<span class="muted-count"> ({allCount})</span>
+      </a>
+      {
+        BUCKETS.filter((b) => (counts[b] ?? 0) > 0).map((b) => (
+          <a href={`/?bucket=${b}`} data-filter={b}>
+            {b}
+            <span class="muted-count"> ({counts[b]})</span>
+          </a>
+        ))
+      }
+    </nav>
+  </div>
+</div>
+
+<style>
+  .muted-count {
+    color: var(--ink-faint);
+    font-weight: 400;
+  }
+</style>
+
+<script is:inline>
+  (() => {
+    const bar = document.querySelector("[data-filter-bar]");
+    const list = document.querySelector("[data-listing]");
+    if (!bar || !list) return;
+
+    const apply = (bucket) => {
+      bar.querySelectorAll("[data-filter]").forEach((el) => {
+        const v = el.getAttribute("data-filter") || "";
+        if (v === (bucket ?? "")) el.setAttribute("aria-current", "true");
+        else el.removeAttribute("aria-current");
+      });
+      let totalShown = 0;
+      list.querySelectorAll("[data-year-block]").forEach((block) => {
+        let shown = 0;
+        block.querySelectorAll(".post-row").forEach((row) => {
+          const match = !bucket || row.getAttribute("data-bucket") === bucket;
+          row.toggleAttribute("hidden", !match);
+          if (match) shown++;
+        });
+        block.toggleAttribute("hidden", shown === 0);
+        const counter = block.querySelector("[data-year-count]");
+        if (counter) {
+          counter.textContent =
+            "· " + shown + " " + (shown === 1 ? "entry" : "entries");
+        }
+        totalShown += shown;
+      });
+      const empty = list.querySelector("[data-empty]");
+      if (empty) empty.toggleAttribute("hidden", totalShown > 0);
+    };
+
+    const fromQuery = () => {
+      const params = new URLSearchParams(location.search);
+      return params.get("bucket");
+    };
+
+    apply(fromQuery());
+
+    bar.querySelectorAll("[data-filter]").forEach((a) => {
+      a.addEventListener("click", (e) => {
+        e.preventDefault();
+        const v = a.getAttribute("data-filter") || "";
+        const url = v ? "?bucket=" + v : location.pathname;
+        history.pushState({}, "", url);
+        apply(v || null);
+      });
+    });
+
+    addEventListener("popstate", () => apply(fromQuery()));
+  })();
+</script>

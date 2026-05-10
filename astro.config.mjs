@@ -6,6 +6,12 @@ import sitemap from "@astrojs/sitemap";
 export default defineConfig({
   site: "https://blog.vinnie.studio",
   output: "static",
+  markdown: {
+    shikiConfig: {
+      theme: "github-light",
+      wrap: true,
+    },
+  },
   integrations: [
     mdx(),
     sitemap({
