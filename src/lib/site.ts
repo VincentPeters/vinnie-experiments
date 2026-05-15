@@ -2,7 +2,7 @@
 export const SITE = {
   title: "vinnie-experiments",
   subtitle:
-    "a public lab notebook on data science, AI, IoT, and the occasional side-project.",
+    "a public lab notebook: question, data, procedure, metric, result, limits.",
   description:
     "Hands-on, demo-driven write-ups about data science, AI, IoT, web platforms, and the occasional cultural side-project.",
   author: "Vincent Peters",

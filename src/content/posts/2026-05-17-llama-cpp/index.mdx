@@ -1,0 +1,206 @@
+---
+title: "llama.cpp on a laptop, in one afternoon"
+date: 2026-05-17
+draft: true
+tags: [build-along, llama-cpp]
+bucket: E
+description: "Install llama.cpp, run a model on a laptop, and figure out what's actually fun to build with it. First stop on the Build-Small tour."
+---
+
+import freshInstall from "./fresh_install.webm?url";
+import vacuumChat from "./vacuum-chat.webm?url";
+import lighthouse from "./lighthouse.webm?url";
+
+> **Draft.** Cold-open lands here when the experiment locks. Working title: "the world's worst weatherman". Confidently wrong and faintly suspicious of clouds. The punchline gets written last; today it's a stub.
+
+Post 1 of 6 in the Build-Small stack tour. llama.cpp goes first because everything else in this tour sits on top of it. Plan for today: install it, get a model answering, then poke at the runtime long enough to figure out what's worth building. The headline experiment isn't picked yet. I want to play first, commit later.
+
+> **[VISUAL — hero]** terminal screenshot of a working lighthouse-keeper exchange in full grumpy character. sets the vibe before any setup. you see what success looks like before you read what to type.
+
+## What llama.cpp actually is
+
+llama.cpp's job is small and specific. Load a model file from disk, turn prompts into tokens, send tokens back. That's it. No UI, no memory between sessions, no orchestration. Knowing exactly where the runtime stops is what makes the rest of the tour make sense.
+
+A token, in case the word is new, is roughly a word fragment. "Weather" might be one token, "weatherman" might be two. The model produces them one at a time. The "streaming" text you see in a chat UI is just tokens arriving as they're generated.
+
+<aside class="marginalia">
+
+words to keep straight.
+
+*model* = the GGUF file on disk.
+
+*runtime* = llama.cpp, the thing that loads weights and produces tokens.
+
+*wrapper* = whatever calls the runtime (your script, a chat UI, an agent loop).
+
+"i'm using Llama" can mean any of the three, and each layer has different failure modes.
+
+</aside>
+
+When people say "I'm using Llama", they could mean three different things: the *model* (the GGUF file on disk), the *runtime* (llama.cpp, the program that loads the file and produces tokens), or the *wrapper* (the code calling the runtime: a Python script, a chat UI, an agent loop). The rest of this post is precise about which is which.
+
+<svg viewBox="0 0 560 400" xmlns="http://www.w3.org/2000/svg" class="stack-diagram" role="img" aria-labelledby="stack-title stack-desc" style="display:block;max-width:560px;width:100%;height:auto;margin:1.5rem auto;">
+  <title id="stack-title">llama.cpp three-layer stack</title>
+  <desc id="stack-desc">Three stacked layers: wrapper (your code, chat UI, agent loop) on top, runtime (llama.cpp) highlighted in the middle, model (GGUF file on disk) at the bottom. A dashed arrow on the left shows prompts flowing down; another on the right shows tokens flowing up.</desc>
+  <style>{`
+    .stack-diagram text { font-family: var(--font-display); font-weight: 600; }
+    .stack-diagram .sub  { font-family: var(--font-mono); font-weight: 400; font-size: 11px; letter-spacing: 0.02em; }
+    .stack-diagram .axis { font-family: var(--font-mono); font-weight: 500; font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; }
+    .stack-diagram .main { font-size: 19px; letter-spacing: -0.005em; }
+    .stack-diagram .flow { animation: stack-dash-flow 1.4s linear infinite; }
+    @keyframes stack-dash-flow { to { stroke-dashoffset: -9; } }
+    @media (prefers-reduced-motion: reduce) {
+      .stack-diagram .flow { animation: none; }
+    }
+  `}</style>
+  <rect x="120" y="48" width="320" height="80" rx="6" fill="var(--paper-subtle)" stroke="var(--ink)" stroke-width="1.5"/>
+  <text x="280" y="84" text-anchor="middle" class="main" fill="var(--ink)">wrapper</text>
+  <text x="280" y="106" text-anchor="middle" class="sub" fill="var(--ink-muted)">your code &#183; chat UI &#183; agent loop</text>
+  <rect x="120" y="160" width="320" height="80" rx="6" fill="#F8E9B6" stroke="#A88438" stroke-width="1.5"/>
+  <text x="280" y="196" text-anchor="middle" class="main" fill="#5E4815">runtime</text>
+  <text x="280" y="218" text-anchor="middle" class="sub" fill="#8B6D25">llama.cpp</text>
+  <rect x="120" y="272" width="320" height="80" rx="6" fill="var(--ink)"/>
+  <text x="280" y="308" text-anchor="middle" class="main" fill="var(--paper)">model</text>
+  <text x="280" y="330" text-anchor="middle" class="sub" fill="var(--ink-faint)">GGUF file on disk</text>
+  <line x1="80" y1="56" x2="80" y2="346" stroke="var(--signal)" stroke-width="1.5" stroke-dasharray="6 3" class="flow"/>
+  <polygon points="80,352 75,343 85,343" fill="var(--signal)"/>
+  <text x="62" y="200" text-anchor="middle" class="axis" fill="var(--signal)" transform="rotate(-90 62 200)">prompt</text>
+  <line x1="480" y1="346" x2="480" y2="56" stroke="#A88438" stroke-width="1.5" stroke-dasharray="6 3" class="flow"/>
+  <polygon points="480,50 475,59 485,59" fill="#A88438"/>
+  <text x="498" y="200" text-anchor="middle" class="axis" fill="#A88438" transform="rotate(-90 498 200)">tokens</text>
+</svg>
+
+<aside class="marginalia">
+
+GGUF is the file format. one binary blob holding model weights plus a metadata header (tokenizer, prompt template, quantization scheme).
+
+single-file means single-command download. no python env, no transformers install, no five-file dance.
+
+</aside>
+
+The model itself lives in a GGUF file. One binary blob, weights plus metadata. That single-file design is why llama.cpp can install in one command and pull a model in one more.
+
+<aside class="marginalia">
+
+quantization, briefly.
+
+the trained weights are 16-bit floats. Q4_K_M shrinks them to ~4.5 bits per weight by grouping similar values and storing them as offsets from a small set of "anchor" values (K-means style).
+
+the M variant spends slightly more bits on the layers that matter most. the file gets ~4× smaller but the model still mostly knows what it knew.
+
+</aside>
+
+Models are big. The 8B Llama 3.1 weights are about 16 GB in their original 16-bit form, too much for a typical laptop. Quantization is how you shrink them. Each weight gets stored in fewer bits, 4 instead of 16, using clever grouping so the model still mostly works. Q4_K_M is the variant we'll use today: ~4.6 GB on disk, decent quality. More on the tradeoff in the showcase.
+
+And a few things llama.cpp deliberately doesn't do, so you stop looking for them:
+
+- It won't pick a model for you. You bring the GGUF, it runs it.
+- It won't route tool calls. You can prompt for JSON, but anything fancier (function calling, MCP, agent loops) belongs to a wrapper.
+- The server is stateless. Every request carries its own conversation history; tracking that history is the client's job.
+- It won't fine-tune. That's a different binary (`llama-finetune`) and a different post.
+
+That smallness is the point. The runtime does one thing well, which means anything built on top stays swap-friendly.
+
+## How to set it up
+
+
+Pinned: llama.cpp **b9095** (10 May 2026). Model: `bartowski/Meta-Llama-3.1-8B-Instruct-GGUF` at Q4_K_M.
+
+```powershell title="Windows"
+winget install llama.cpp
+```
+
+```bash title="macOS / Linux"
+brew install llama.cpp
+```
+
+<video src={freshInstall} controls autoplay loop muted playsInline preload="metadata" aria-label="winget installing llama.cpp from a fresh PowerShell, start to finish"></video>
+
+```powershell title="Verify"
+llama-cli --version
+```
+
+![terminal output of `llama-cli --version` showing build b9095](./verify.png)
+
+Now pull a model and start talking to it.
+
+```powershell title="Run model"
+llama-cli -hf bartowski/Meta-Llama-3.1-8B-Instruct-GGUF -cnv -p "You are a curt 19th-century lighthouse keeper. Reply in two sentences max."
+```
+
+`-hf <repo>` lets llama-cli act as its own downloader, so you skip the manual "fetch GGUF, place it somewhere, point at it" routine.
+`-cnv` is conversation mode.
+`-p` is the system prompt.
+
+First run pulls the model (~4.6 GB) and caches it under `%USERPROFILE%\.cache\llama.cpp\`. Every run after that is instant.
+
+<video src={lighthouse} controls autoplay loop muted playsInline preload="metadata" aria-label="TUI"></video>
+
+For an OpenAI-compatible local API instead:
+
+```powershell title="Run as Api"
+llama-server -hf bartowski/Meta-Llama-3.1-8B-Instruct-GGUF --port 8080
+```
+
+`http://localhost:8080` gives you a chat UI in the browser. `POST http://localhost:8080/v1/chat/completions` gives you the API.
+
+<video src={vacuumChat} controls autoplay loop muted playsInline preload="metadata" aria-label="Gui interface"></video>
+
+## What can we do with this?
+
+Four things, each useful on its own.
+
+### Prompts as personalities
+
+Start with `-cnv` and a system prompt. The model's personality is downstream of one line of text. Type "you are a 19th-century lighthouse keeper who answers in two sentences" and the next ten replies arrive with weight, faint grumpiness, and ocean somewhere in the mid-distance. Change the prompt and restart; the new character shows up immediately. No fine-tuning, no training data, no new model file. Just words.
+
+> **[VISUAL]** short screen recording (gif, 5–10 seconds) of typing two or three messages to the lighthouse keeper and getting answers back. captures the immediacy in a way a static screenshot can't.
+
+### A model in a pipe
+
+Without `-cnv`, llama-cli behaves like a Unix filter. Text in, text out.
+
+```bash
+llama-cli -m model.gguf -p "summarise:" < article.txt > summary.txt
+```
+
+Swap "summarise" for "extract every email address", "translate to Dutch", or "rate this email's politeness from 1 to 10". Same shape, different output. Pair it with `find` or a `for` loop and you've automated something that needed a paid API two years ago.
+
+> **[VISUAL]** stacked-pane terminal screenshot. top pane: a longish article (visible scrollback). bottom pane: a short summary coming back. labels "in" and "out" on the side if it helps.
+
+### Anything-that-knows-OpenAI knows this
+
+`llama-server` is the bigger move. It exposes the same model as an OpenAI-compatible HTTP endpoint, so any client that can call OpenAI can call your laptop. Point the OpenAI Python SDK at `base_url=http://localhost:8080/v1`, leave the API key empty, and it works.
+
+```python
+from openai import OpenAI
+client = OpenAI(base_url="http://localhost:8080/v1", api_key="not-needed")
+client.chat.completions.create(
+    model="local",
+    messages=[{"role": "user", "content": "Why is the sky blue?"}]
+)
+```
+
+The rest of this tour leans on this trick. Gradio chat UIs, agent loops, RAG demos: same code as the hosted version, with `localhost:8080` swapped in for the OpenAI host.
+
+> **[VISUAL]** split-screen. left: the python snippet running. right: llama-server's log lines lighting up as the request hits. makes "your laptop is the backend" visible instead of theoretical.
+
+### The quality dial
+
+The same 8B model lives at roughly 4.6 GB at Q4_K_M, 3.4 GB at Q3_K_M, 6.4 GB at Q5_K_M. Lower the bits, lower the RAM, lower the quality. The curve isn't linear, though. Q4_K_M is where most people stop because dropping to Q3 starts to sound subtly off in long answers, and Q5 isn't usually audible. Default to Q4_K_M. Push down only when you have to fit in less RAM. Push up only when you can actually hear the difference.
+
+> **[VISUAL]** three-column comparison. same prompt across Q3_K_M, Q4_K_M, Q5_K_M. ideally a prompt where Q3 visibly falls apart and Q4/Q5 look near-identical. makes the slider concrete instead of abstract.
+
+## The experiment
+
+> **Placeholder.** Working title: "the world's worst weatherman", confidently wrong and faintly suspicious of clouds. Locks once it survives contact with the model. What ends up here: the prompts I tried, the failures, the moment it tipped into something I'd show a friend, and the final demo.
+
+> **[VISUAL — locked later]** short video or gif of the final weatherman demo running. probably a terminal session or a tiny browser ui.
+
+## What's next
+
+That's llama.cpp. A small runtime that loads a model file and produces tokens, plus an HTTP wrapper that speaks OpenAI's protocol. Everything else (chat UIs, agent loops, RAG, structured output) is built on top of those two binaries.
+
+Next stop on the tour: post 2 puts a real interface on this with Gradio. Same `llama-server` running on `localhost:8080`, but the friends I'd actually want to demo this to can poke at it without opening a terminal.
+
+> **[VISUAL — teaser]** one-line preview screenshot of the post-2 Gradio UI. just a glimpse. enough to make people want to click through when post 2 drops.

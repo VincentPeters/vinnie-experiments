@@ -2,6 +2,20 @@
 // src/pages/about.astro
 import Layout from "../components/Layout.astro";
 import { SITE } from "../lib/site";
+import { BUCKETS, BUCKET_LABELS } from "../content.config";
+
+// Per-bucket scope description. The label (e.g. "writing and reading")
+// is shared with the post-page apparatus via BUCKET_LABELS; this map
+// adds the longer scope sentence that only the about-page glossary needs.
+const BUCKET_SCOPE: Record<(typeof BUCKETS)[number], string> = {
+  A: "Mobility, inland shipping, e-bike, edge IoT, circular, cultural-public data",
+  B: "Existing artefacts (Switch-to-EU, Commensradio, Gaming API, etc.) treated as research field",
+  C: "On messy real-world data",
+  D: "A/B tests, hypothesis tests, effect sizes, intervals",
+  E: "Paper summaries, proposal drafts, re-framings of older work",
+  F: "Absurd, installation, off-beat",
+  meta: "About this site, stack notes, weeknotes",
+};
 ---
 
 <Layout title="about" description={`About ${SITE.author} and ${SITE.title}.`}>
@@ -32,46 +46,16 @@ import { SITE } from "../lib/site";
     </p>
     <table>
       <tbody>
-        <tr>
-          <td><strong>A</strong></td>
-          <td>
-            <em>niche</em>. Mobility, inland shipping, e-bike, edge IoT,
-            circular, cultural-public data
-          </td>
-        </tr>
-        <tr>
-          <td><strong>B</strong></td>
-          <td>
-            <em>reuse</em>. Existing artefacts (Switch-to-EU, Commensradio,
-            Gaming API, etc.) treated as research field
-          </td>
-        </tr>
-        <tr>
-          <td><strong>C</strong></td>
-          <td><em>classical ML</em> on messy real-world data</td>
-        </tr>
-        <tr>
-          <td><strong>D</strong></td>
-          <td>
-            <em>methodology and statistics</em>. A/B tests, hypothesis tests,
-            effect sizes, intervals
-          </td>
-        </tr>
-        <tr>
-          <td><strong>E</strong></td>
-          <td>
-            <em>writing and reading</em>. Paper summaries, proposal drafts,
-            re-framings of older work
-          </td>
-        </tr>
-        <tr>
-          <td><strong>F</strong></td>
-          <td><em>cultural</em>. Absurd, installation, off-beat</td>
-        </tr>
-        <tr>
-          <td>·</td>
-          <td><em>meta</em>. About this site, stack notes, weeknotes</td>
-        </tr>
+        {
+          BUCKETS.map((b) => (
+            <tr>
+              <td>{b === "meta" ? "·" : <strong>{b}</strong>}</td>
+              <td>
+                <em>{BUCKET_LABELS[b]}</em>{BUCKET_SCOPE[b] ? `. ${BUCKET_SCOPE[b]}` : ""}
+              </td>
+            </tr>
+          ))
+        }
       </tbody>
     </table>
 

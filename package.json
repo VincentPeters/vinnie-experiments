@@ -11,6 +11,7 @@
     "preview": "astro preview",
     "astro": "astro",
     "fetch-fonts": "node scripts/fetch-fonts.mjs",
+    "media:webm": "node scripts/media-to-webm.mjs",
     "test": "playwright test",
     "test:ui": "playwright test --ui"
   },
@@ -31,6 +32,7 @@
   "devDependencies": {
     "@astrojs/check": "^0.9.9",
     "@playwright/test": "^1.59.1",
+    "remark-breaks": "^4.0.0",
     "typescript": "^6.0.3",
     "wrangler": "^4.89.0"
   }

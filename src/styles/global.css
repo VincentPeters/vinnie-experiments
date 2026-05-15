@@ -189,25 +189,27 @@ h4 {
 }
 
 h1 {
-  font-size: clamp(1.8rem, 2.4vw, 2.2rem);
-  font-weight: 600;
-  letter-spacing: -0.018em;
-  line-height: 1.15;
+  font-size: clamp(2.4rem, 4.6vw, 3.8rem);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.05;
   margin-block-end: var(--s-3);
 }
 
 h2 {
-  font-size: 1.45rem;
+  font-size: 2rem;
   font-weight: 700;
-  letter-spacing: -0.012em;
+  letter-spacing: -0.015em;
+  line-height: 1.15;
   margin-block-start: var(--s-5);
   margin-block-end: var(--s-3);
 }
 
 h3 {
-  font-size: 1.18rem;
+  font-size: 1.5rem;
   font-weight: 600;
-  letter-spacing: -0.005em;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
   margin-block-start: var(--s-4);
   margin-block-end: var(--s-2);
 }
@@ -296,12 +298,226 @@ pre {
   margin: var(--s-4) 0;
   overflow-x: auto;
   border-radius: 0;
+  clear: right;
 }
 
 pre code {
   background: transparent;
   padding: 0;
   font-size: inherit;
+}
+
+/* Shiki dual-theme syntax mapping. With `defaultColor: false`, Shiki emits
+   --shiki-light / --shiki-dark on each token; we drive the active variant
+   from [data-theme]. Background and default foreground use the design
+   tokens directly so the warm-paper surface holds in either theme.
+   The !important keeps us safe against Shiki's inline color/bg styles. */
+.astro-code {
+  position: relative;
+  background: var(--paper-subtle) !important;
+  color: var(--shiki-light, var(--ink)) !important;
+  /* `normal` collapses the literal "\n" text nodes Shiki emits between
+     `.line` elements. Without this each `.line` (display:block) ends the
+     line AND the following newline renders a second, empty line, which
+     doubles the vertical spacing. Each `.line` re-enables pre-wrap below
+     so its own indentation is preserved and long lines still wrap.
+     `!important` overrides Shiki's inline `white-space: pre-wrap`. */
+  white-space: normal !important;
+  word-break: normal;
+  overflow-wrap: break-word;
+  overflow-x: hidden !important;
+  padding-inline-end: 4.5rem;
+}
+.astro-code .line {
+  display: block;
+  white-space: pre-wrap;
+}
+.astro-code span {
+  color: var(--shiki-light, inherit) !important;
+}
+[data-theme="dark"] .astro-code,
+[data-theme="dark"] .astro-code span {
+  color: var(--shiki-dark, var(--ink)) !important;
+}
+
+/* Apparatus on code blocks: $ prompt on shell langs (skipping comment +
+   empty lines), line numbers on non-shell langs. Primary trigger is
+   `data-shell` / `data-numbered` attributes set by the Shiki transformer
+   in astro.config.mjs. The duplicate language-based selectors below are
+   a transitional fallback that activates the same rules even when the
+   transformer's pre() hook hasn't reached the running dev server yet;
+   they can be removed once a full Astro build picks up the transformer
+   on every render path. The two attributes / fallbacks are mutually
+   exclusive in practice. */
+
+:is(
+  .post-body pre.astro-code[data-shell],
+  .post-body pre.astro-code[data-language="bash"],
+  .post-body pre.astro-code[data-language="sh"],
+  .post-body pre.astro-code[data-language="zsh"],
+  .post-body pre.astro-code[data-language="powershell"],
+  .post-body pre.astro-code[data-language="pwsh"],
+  .post-body pre.astro-code[data-language="shell"],
+  .post-body pre.astro-code[data-language="console"],
+  .post-body pre.astro-code[data-language="cmd"]
+) .line {
+  display: block;
+  padding-inline-start: 2ch;
+  text-indent: -2ch;
+}
+
+:is(
+  .post-body pre.astro-code[data-shell],
+  .post-body pre.astro-code[data-language="bash"],
+  .post-body pre.astro-code[data-language="sh"],
+  .post-body pre.astro-code[data-language="zsh"],
+  .post-body pre.astro-code[data-language="powershell"],
+  .post-body pre.astro-code[data-language="pwsh"],
+  .post-body pre.astro-code[data-language="shell"],
+  .post-body pre.astro-code[data-language="console"],
+  .post-body pre.astro-code[data-language="cmd"]
+) .line:not([data-comment])::before {
+  content: "$ ";
+  color: var(--ink-faint);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.post-body pre.astro-code[data-numbered] {
+  counter-reset: line;
+}
+
+.post-body pre.astro-code[data-numbered] .line {
+  counter-increment: line;
+  display: block;
+  padding-inline-start: 4ch;
+  text-indent: -4ch;
+}
+
+.post-body pre.astro-code[data-numbered] .line::before {
+  content: counter(line);
+  display: inline-block;
+  width: 3ch;
+  margin-inline-end: 1ch;
+  /* Gutter rule: a hairline between the number column and the code,
+     like the margin rule on grid paper. Uses --ink-faint (the line-
+     number color) rather than --paper-edge: the latter is tuned for
+     dividers on the page bg and is near-invisible against the code
+     block's paper-subtle surface. box-sizing is border-box, so the
+     border and padding stay inside the 3ch width and the 4ch line
+     indent holds. Empty lines keep their ::before, so the rule runs
+     unbroken down the block. */
+  padding-inline-end: 0.6ch;
+  border-inline-end: 1px solid var(--ink-faint);
+  color: var(--ink-faint);
+  text-align: right;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Switchable code-tabs widget. Built at runtime in Layout.astro when two
+   or more consecutive tab-style-P + PRE pairs appear in the markup.
+   Active tab carries the paper-subtle bg and ink color; inactive tabs
+   sit on the page bg with ink-muted, ready to be clicked. */
+.code-tabs {
+  margin: var(--s-4) 0;
+  clear: right;
+}
+.code-tabs-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  width: fit-content;
+  max-width: 100%;
+}
+.code-tabs-tab {
+  background: transparent;
+  border: none;
+  border-block-end: var(--hairline);
+  padding: var(--s-2) var(--s-3);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  color: var(--ink-muted);
+  cursor: pointer;
+  transition: color 120ms ease, background-color 120ms ease;
+}
+.code-tabs-tab:hover,
+.code-tabs-tab:focus-visible {
+  color: var(--signal-deep);
+}
+.code-tabs-tab.is-active {
+  background: var(--paper-subtle);
+  color: var(--ink);
+}
+.code-tabs-panels {
+  margin: 0;
+}
+.code-tabs-panel.astro-code {
+  margin-block-start: 0 !important;
+}
+
+/* Code-block label, set explicitly via `title="..."` on the fence:
+       ```powershell title="Windows"
+   The Shiki transformer in astro.config.mjs writes the label to the
+   `data-code-label` attribute on the <pre>. ::before renders the label
+   as a compact tab pill (only as wide as the title) attached to the
+   top-left of the pre, sharing the pre's paper-subtle background. The
+   pre stays full apparatus width regardless of label or content length.
+   When the tab-grouping JS in Layout.astro wraps multiple labelled pre
+   siblings into a switchable .code-tabs widget, the ::before is hidden
+   on those panels so the tab list above isn't duplicated. */
+.post-body pre.astro-code[data-code-label]::before {
+  content: attr(data-code-label);
+  display: block;
+  width: max-content;
+  max-width: 100%;
+  margin: calc(var(--s-3) * -1) 0 var(--s-3) calc(var(--s-3) * -1);
+  padding: var(--s-2) var(--s-3);
+  border-block-end: var(--hairline);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  color: var(--ink-muted);
+}
+.post-body pre.code-tabs-panel[data-code-label]::before {
+  display: none;
+}
+
+/* Copy button. Bracket-voice apparatus, hover-revealed top-right. */
+.post-body pre.astro-code .copy-btn {
+  position: absolute;
+  top: var(--s-2);
+  right: var(--s-2);
+  background: var(--paper-subtle);
+  border: none;
+  padding: 0.15rem 0.4rem;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  letter-spacing: 0.04em;
+  color: var(--ink-muted);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 120ms ease, color 120ms ease;
+}
+.post-body pre.astro-code:hover .copy-btn,
+.post-body pre.astro-code:focus-within .copy-btn,
+.post-body pre.astro-code .copy-btn:focus-visible {
+  opacity: 1;
+}
+.post-body pre.astro-code .copy-btn .bracket {
+  color: var(--ink-faint);
+}
+.post-body pre.astro-code .copy-btn:hover {
+  color: var(--signal-deep);
+}
+@media (prefers-reduced-motion: reduce) {
+  .post-body pre.astro-code .copy-btn {
+    opacity: 1;
+    transition: none;
+  }
 }
 
 blockquote {
@@ -354,15 +570,37 @@ td.numeric {
 
 /* ---------- header / wordmark / nav ---------- */
 
+/* display: contents lets the three header children (brand, subtitle, nav)
+   use <body> as their containing block, so the sticky brand and nav can
+   stay docked across the full page scroll instead of being trapped inside
+   the header's own short box. The <header> element keeps its semantic
+   banner role. */
 .site-header {
-  background: var(--paper);
+  display: contents;
 }
 
 .site-header-brand {
-  border-block-end: var(--hairline);
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: var(--paper);
+  /* margin sits in the document above the sticky brand. It provides the
+     initial whitespace above the wordmark; as the user scrolls, that
+     space scrolls naturally out of view until the brand docks at top:0.
+     No animation involved — the shrink is the scroll itself. */
+  margin-block-start: var(--s-5);
+}
+
+.site-header-subtitle {
+  background: var(--paper);
 }
 
 .site-header-nav {
+  position: sticky;
+  top: var(--site-header-brand-h, 0px);
+  z-index: 2;
+  background: var(--paper);
+  border-block-start: var(--hairline);
   border-block-end: var(--hairline);
 }
 
@@ -388,7 +626,11 @@ td.numeric {
 }
 
 .site-header-brand .site-header-inner {
-  padding-block: var(--s-5) var(--s-3);
+  padding-block: var(--s-2);
+}
+
+.site-header-subtitle .site-header-inner {
+  padding-block: 0 var(--s-3);
 }
 
 .site-header-nav .site-header-inner {
@@ -433,7 +675,7 @@ td.numeric {
 }
 
 .wordmark .signal {
-  color: var(--signal);
+  color: inherit;
 }
 
 .subtitle {
@@ -799,6 +1041,43 @@ td.numeric {
   color: var(--ink-faint);
 }
 
+/* Inline-decoded bucket label: "bucket E (writing and reading)".
+   The parenthetical part rides ink-faint so the apparatus glyph (E)
+   stays the typographic anchor and the gloss reads as annotation.
+   Used in both .post-apparatus and .post-footer-nav. */
+.bucket-link,
+.post-footer-nav a {
+  text-decoration-line: underline;
+  text-decoration-style: dotted;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+  color: inherit;
+}
+.bucket-name {
+  color: var(--ink-faint);
+}
+.bucket-link:hover .bucket-name,
+.post-footer-nav a:hover .bucket-name {
+  color: var(--signal-deep);
+}
+
+/* Tag row: format tags become navigable; topic tags stay as labels.
+   Format-tag link uses the dotted underline + signal-deep on hover that
+   the rest of the site already speaks. */
+.post-tags .tag-format {
+  color: inherit;
+  text-decoration-line: underline;
+  text-decoration-style: dotted;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+.post-tags .tag-format:hover,
+.post-tags .tag-format:focus-visible {
+  color: var(--signal-deep);
+  text-decoration-style: solid;
+  text-decoration-thickness: 2px;
+}
+
 .post-title {
   margin: var(--s-2) 0 var(--s-3);
 }
@@ -841,6 +1120,10 @@ td.numeric {
   margin-inline: var(--s-2);
 }
 
+.post-footer-nav .bracket {
+  color: var(--ink-faint);
+}
+
 .post-body {
   max-width: var(--measure);
 }
@@ -853,17 +1136,41 @@ td.numeric {
   line-height: 1.6;
 }
 
+/* Prose-cap list: text-only descendants stay at the comfortable reading
+   measure. Code blocks (`pre`) and figures are apparatus per DESIGN.md§5,
+   so they break out to `--measure` (100ch) — claiming the marginalia
+   gutter for posts that have code or figures but no authored sidenotes.
+   Headings get a font-size-independent rem cap because `ch` in the
+   heading font (Switzer at 32-60px) computes much wider than `ch` in
+   the body font — using rem keeps the visual cap consistent. */
 .post-body > p,
 .post-body > ul,
 .post-body > ol,
-.post-body > h2,
-.post-body > h3,
-.post-body > h4,
-.post-body > pre,
 .post-body > blockquote,
 .post-body > hr,
 .post-body > table {
   max-width: var(--measure-prose);
+}
+
+.post-body > h2,
+.post-body > h3,
+.post-body > h4 {
+  max-width: 35rem;
+}
+
+/* Video sits in the prose column, same width as text and inline images.
+   Code blocks and figures still break out to --measure (apparatus width).
+   The font properties are set so `ch` resolves against the body font
+   (matches paragraphs); without them the browser default font's '0' is
+   narrower and the video ends up ~30px less wide than the text. */
+.post-body video {
+  display: block;
+  font-family: var(--font-body);
+  font-size: 1.0625rem;
+  max-width: var(--measure-prose);
+  width: 100%;
+  height: auto;
+  margin-block: var(--s-4);
 }
 
 /* method section: works whether content is <dl> or h2 + ul of "**Term:** body" */
@@ -957,17 +1264,29 @@ figure figcaption::before {
 
 /* ---------- marginalia ---------- */
 
-.post-body aside.marginalia {
-  font-family: var(--font-body);
-  font-style: italic;
-  font-size: 0.92rem;
-  line-height: 1.5;
+.post-body aside.marginalia,
+.post-body aside.marginalia p {
+  font-family: var(--font-mono);
+  font-style: normal;
+  font-size: 0.78rem;
+  letter-spacing: 0.03em;
+  line-height: 1.55;
   color: var(--ink-muted);
+}
+
+.post-body aside.marginalia {
   margin-block: var(--s-3);
   padding: var(--s-2) var(--s-3);
   border-inline-start: var(--hairline);
   background: transparent;
 }
+
+.post-body aside.marginalia p {
+  margin-block: 0.5em;
+}
+
+.post-body aside.marginalia p:first-child { margin-top: 0; }
+.post-body aside.marginalia p:last-child  { margin-bottom: 0; }
 
 @media (min-width: 1024px) {
   .post-body aside.marginalia {
@@ -975,16 +1294,9 @@ figure figcaption::before {
     clear: right;
     width: calc(var(--measure) - var(--measure-prose) - 2.5rem);
     max-width: 26ch;
-    margin-block: 0.4rem 0;
+    margin-block: 0.4rem var(--s-4);
     margin-inline: var(--s-4) 0;
     padding: 0 0 0 var(--s-3);
-    font-style: normal;
-    font-family: var(--font-mono);
-    font-size: 0.78rem;
-    letter-spacing: 0.03em;
-    line-height: 1.55;
-    border-inline-start: var(--hairline);
-    color: var(--ink-muted);
   }
 }
 
