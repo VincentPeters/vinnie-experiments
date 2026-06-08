@@ -1,0 +1,29 @@
+---
+// Evergreen smoke-test page for <MapEmbed>. Not linked anywhere and excluded
+// from the sitemap (see astro.config.mjs filter). Uses a dummy base so the test
+// asserts lazy-injection + URL params without hitting a real backend.
+import MapEmbed from "../components/MapEmbed.astro";
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>MapEmbed test</title>
+  </head>
+  <body>
+    <main>
+      <div style="height: 130vh">scroll down to trigger the lazy map</div>
+      <MapEmbed
+        title="Antwerp green layers"
+        controls="layers"
+        layers={["parks", "trees"]}
+        center={[4.41, 51.21]}
+        zoom={14}
+        base="http://example.test"
+      />
+    </main>
+  </body>
+</html>

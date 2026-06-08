@@ -154,7 +154,8 @@ export default defineConfig({
   integrations: [
     mdx(),
     sitemap({
-      filter: (page) => !page.includes("/demo-test"),
+      filter: (page) =>
+        !page.includes("/demo-test") && !page.includes("/map-embed-test"),
     }),
   ],
   env: {
