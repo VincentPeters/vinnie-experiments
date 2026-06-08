@@ -1,0 +1,124 @@
+---
+title: "Turning a greenness score into a bike route"
+date: 2026-06-22
+draft: true
+tags: [build-along, travel-by-trees, routing]
+bucket: A
+description: "How Travel by Trees makes a router prefer green streets: baking the score into BRouter segments, a per-tier cost discount, and a slider that trades minutes for trees, live."
+---
+
+import MapEmbed from "../../../components/MapEmbed.astro";
+
+Two posts in, every street in Antwerp carries a greenness class. None of it has moved a single route yet.
+
+This post closes the loop. A router that reads the score, a slider that turns it up, and an honest number for what the detour costs.
+
+Drag the slider below. The route slides off the grey arterial and onto the park path. The panel shows how much greener it got, and how many minutes it added.
+
+<MapEmbed
+  title="Greener versus shortest, live"
+  controls="slider"
+  start={[4.4209, 51.2172]}
+  end={[4.4123, 51.2050]}
+  intensity={70}
+  aspect="16 / 11"
+  caption="Drag the greenness slider. The green route re-plans against the grey shortest baseline."
+/>
+
+## The question
+
+The score lives in a database column. A router does not read your database. It reads a routing graph: nodes, edges, and a cost on each edge. So the question is narrow. How does a per-street greenness class become a cheaper edge?
+
+## Precompute, do not compute
+
+The score is expensive to work out and never changes between requests. So it is worked out once, offline, and written into the map.
+
+The class goes onto each road as a tag, `tbt_green`. BRouter then reads that tagged map and builds its own routing format: binary segment files. A three-step build cuts the map, unifies node positions, and links the ways into segments.
+
+<svg viewBox="0 0 640 130" xmlns="http://www.w3.org/2000/svg" class="tbt-bake" role="img" aria-labelledby="bake-title bake-desc" style="display:block;max-width:640px;width:100%;height:auto;margin:1.5rem auto;">
+  <title id="bake-title">Baking the greenness tag into routing segments</title>
+  <desc id="bake-desc">The tagged map file passes through three build steps, OsmFastCutter, PosUnifier, and WayLinker, and becomes a small binary segment file.</desc>
+  <style>{`
+    .tbt-bake text { font-family: var(--font); }
+    .tbt-bake .box { fill: var(--subtle); stroke: var(--muted); stroke-width: 1.5; }
+    .tbt-bake .step { fill: var(--bg); stroke: var(--accent); stroke-width: 1.5; }
+    .tbt-bake .out { fill: var(--fg); }
+    .tbt-bake .lbl { font-size: 11px; fill: var(--fg); }
+    .tbt-bake .lbl-out { font-size: 12px; font-weight: 700; fill: var(--bg); }
+    .tbt-bake .wire { stroke: var(--accent); stroke-width: 1.5; fill: none; stroke-dasharray: 5 4; }
+    .tbt-bake .flow { animation: tbt-bake-dash 1.6s linear infinite; }
+    @keyframes tbt-bake-dash { to { stroke-dashoffset: -18; } }
+    @media (prefers-reduced-motion: reduce) { .tbt-bake .flow { animation: none; } }
+  `}</style>
+  <rect class="box" x="6" y="45" width="120" height="40" rx="5"/><text class="lbl" x="16" y="62">enriched map</text><text class="lbl" x="16" y="78">tbt_green tags</text>
+  <path class="wire flow" d="M126,65 L150,65"/>
+  <rect class="step" x="150" y="48" width="100" height="34" rx="5"/><text class="lbl" x="160" y="69">OsmFastCutter</text>
+  <path class="wire flow" d="M250,65 L274,65"/>
+  <rect class="step" x="274" y="48" width="90" height="34" rx="5"/><text class="lbl" x="284" y="69">PosUnifier</text>
+  <path class="wire flow" d="M364,65 L388,65"/>
+  <rect class="step" x="388" y="48" width="90" height="34" rx="5"/><text class="lbl" x="398" y="69">WayLinker</text>
+  <path class="wire flow" d="M478,65 L502,65"/>
+  <rect class="box out" x="502" y="45" width="132" height="40" rx="5"/><text class="lbl-out" x="568" y="62" text-anchor="middle">segments</text><text class="lbl-out" x="568" y="78" text-anchor="middle">759 KB</text>
+</svg>
+
+A 17 MB map of Antwerp becomes one 759 KB segment file. The router loads it at startup. Every route after that is a graph search over edges it already holds.
+
+## Green edges cost less
+
+BRouter routes by cost. The cheapest path wins. So to prefer green, you make green edges cheaper.
+
+The profile gives each class a discount. A road inside a park has its cost cut by 80 percent. A high or medium green road gets 20 percent off. A car-free path gets a smaller bonus on top.
+
+```text title="trees.brf, the discounts"
+park    -> 0.80   off
+high    -> 0.20   off
+medium  -> 0.20   off
+carfree -> 0.20   bonus, added at half weight
+```
+
+The discount multiplies the edge cost. A park path at full strength costs a fifth of its grey-road price, so the search bends toward it.
+
+<svg viewBox="0 0 520 150" xmlns="http://www.w3.org/2000/svg" class="tbt-cost" role="img" aria-labelledby="cost-title cost-desc" style="display:block;max-width:520px;width:100%;height:auto;margin:1.5rem auto;">
+  <title id="cost-title">A green discount shrinking an edge cost</title>
+  <desc id="cost-desc">Two cost bars. A grey road keeps its full cost. A park road is cut to a fifth.</desc>
+  <style>{`
+    .tbt-cost text { font-family: var(--font); }
+    .tbt-cost .full { fill: var(--muted); }
+    .tbt-cost .cut { fill: var(--accent); animation: tbt-cost-cut 3s ease-in-out infinite; transform-origin: left center; }
+    .tbt-cost .lbl { font-size: 12px; fill: var(--fg); }
+    .tbt-cost .lbl-m { font-size: 11px; fill: var(--muted); }
+    @keyframes tbt-cost-cut { 0%,15%{transform:scaleX(1)} 50%,90%{transform:scaleX(0.2)} 100%{transform:scaleX(1)} }
+    @media (prefers-reduced-motion: reduce) { .tbt-cost .cut { animation: none; transform: scaleX(0.2); } }
+  `}</style>
+  <text class="lbl" x="10" y="44">grey road</text>
+  <rect class="full" x="120" y="30" width="360" height="22" rx="3"/>
+  <text class="lbl" x="10" y="104">park road</text>
+  <rect class="cut" x="120" y="90" width="360" height="22" rx="3"/>
+  <text class="lbl-m" x="120" y="132">cost, after the green discount</text>
+</svg>
+
+One detail worth its own line. The car-free bonus is added at half weight, under the green discount, on purpose. An earlier version let a cranked car-free bonus send routes onto an ungreen but car-free cycleway, in one case the ring road. Greenness has to dominate. Car-free only nudges.
+
+## The slider, live
+
+The slider in the map runs from 0 to 100. It maps to an intensity the profile reads, from 0 to 3. At 0 the discounts vanish and you get the plain fast route. At 100 they hit full strength.
+
+BRouter re-reads its profile on every request. So the slider changes routing with no rebuild. Move it, and the same start and end re-plan against a different cost.
+
+Two routes come back for each request. The green one, from the trees profile. The grey one, from a plain fast-bike profile. Both times are computed at one fixed speed, so "12 percent greener, 2 minutes longer" is a fair trade and not two routers arguing about their own clocks. The green share itself comes from the tags: the fraction of the route that runs on park, high, or medium streets.
+
+## Routing through the park
+
+One stubborn case. Middelheim's nicest paths are tagged `bicycle=no`. The router, correctly, refuses them. A green-routing app wants them anyway.
+
+So there is a switch, off by default. With it on, the router considers park-interior paths at walking pace when the street is a park. It is the gap between what the map says you may do and what you actually want on a Sunday. The honest default respects the ban. The switch is yours to flip.
+
+## Limits
+
+One city. The time is a fixed-speed estimate, not a real cycling model, so it ignores hills, lights, and surface. Greenness is still the proxy from the last post. And the cost model has a personality: turn the car-free bonus up and it will tempt the ring road again. The current weights hold it back. They are not a law.
+
+## The whole arc
+
+Three posts. Five open datasets became a road network. A buffer and a formula turned that into a score per street. A discount turned the score into a route you would actually ride.
+
+The map at the top is the payoff. Everything under it is why the green line goes where it does.
