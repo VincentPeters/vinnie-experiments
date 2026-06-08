@@ -20,6 +20,7 @@ interface Props extends MapEmbedOptions {
 
 const { title, src, poster, aspect = "16 / 10", caption, ...opts } = Astro.props;
 const embedSrc = src ?? buildEmbedUrl(opts);
+const isVideoPoster = poster ? /\.(webm|mp4|mov)$/i.test(poster) : false;
 ---
 
 <figure class="map-embed">
@@ -33,10 +34,22 @@ const embedSrc = src ?? buildEmbedUrl(opts);
     <div class="map-embed-frame" data-map-embed-frame></div>
     <div class="map-embed-poster" data-map-embed-poster>
       {
-        poster ? (
+        poster && isVideoPoster ? (
           <video src={poster} autoplay loop muted playsinline preload="metadata" aria-hidden="true"></video>
+        ) : poster ? (
+          <img src={poster} alt="" loading="lazy" />
         ) : (
-          <span class="map-embed-ph meta">interactive map · loads on scroll</span>
+          <div class="map-embed-ph">
+            <svg viewBox="0 0 120 60" width="120" height="60" aria-hidden="true">
+              <rect x="14" y="8" width="40" height="26" rx="3" fill="var(--accent)" opacity="0.18" />
+              <rect x="66" y="28" width="44" height="24" rx="3" fill="var(--accent)" opacity="0.14" />
+              <path d="M8,52 L34,32 L70,28 L112,10" fill="none" stroke="var(--accent)" stroke-width="2.5" />
+              <circle cx="8" cy="52" r="3.5" fill="var(--fg)" />
+              <circle cx="112" cy="10" r="3.5" fill="var(--accent)" />
+            </svg>
+            <span class="map-embed-ph-title">{title}</span>
+            <span class="meta">interactive map · loads on scroll</span>
+          </div>
         )
       }
     </div>
@@ -75,10 +88,22 @@ const embedSrc = src ?? buildEmbedUrl(opts);
   .map-embed-poster[hidden] {
     display: none;
   }
-  .map-embed-poster video {
+  .map-embed-poster video,
+  .map-embed-poster img {
     width: 100%;
     height: 100%;
     object-fit: cover;
+  }
+  .map-embed-ph {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--s-2);
+    text-align: center;
+  }
+  .map-embed-ph-title {
+    font-weight: 700;
+    color: var(--fg);
   }
   .map-embed figcaption {
     margin-top: var(--s-2);
