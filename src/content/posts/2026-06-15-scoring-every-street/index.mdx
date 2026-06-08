@@ -1,0 +1,182 @@
+---
+title: "Scoring every street for greenness"
+date: 2026-06-15
+draft: true
+tags: [build-along, travel-by-trees, greenness]
+bucket: C
+description: "How Travel by Trees turns raw open data into one greenness score per street: a 25-metre buffer, a weighted vegetation count, and a probabilistic union that makes a park beat a leafy road."
+---
+
+import PyDemo from "../../../components/PyDemo.astro";
+import MapEmbed from "../../../components/MapEmbed.astro";
+
+The last post gathered five datasets into one PostGIS database. None of it is a score yet. There is a vegetation raster, some park polygons, some water, and a road network sitting next to them.
+
+This post does the arithmetic. Every one of 40,032 Antwerp streets comes out with a single label: park, high, medium, or low.
+
+## The question
+
+For each road, how green is the strip you ride through? Not the road surface. The 25 metres on either side: the trees, the water, the park you pass.
+
+The answer has to be one number per road, comparable across the whole city, cheap to compute 40,000 times.
+
+## A 25-metre buffer
+
+Start with the road. Buffer it by 25 metres. Reproject to the Belgian Lambert grid first, EPSG:31370, so the buffer is 25 real metres and not 25 degrees.
+
+Then measure what falls inside.
+
+<svg viewBox="0 0 560 180" xmlns="http://www.w3.org/2000/svg" class="tbt-buf" role="img" aria-labelledby="buf-title buf-desc" style="display:block;max-width:560px;width:100%;height:auto;margin:1.5rem auto;">
+  <title id="buf-title">A 25-metre buffer sampling vegetation pixels</title>
+  <desc id="buf-desc">A road line with a band 25 metres to each side. Green pixels inside the band are counted; pixels outside are ignored.</desc>
+  <style>{`
+    .tbt-buf text { font-family: var(--font); }
+    .tbt-buf .band { fill: var(--accent); opacity: 0.10; }
+    .tbt-buf .road { stroke: var(--fg); stroke-width: 2.5; }
+    .tbt-buf .px-in { animation: tbt-buf-in 3.2s ease-in-out infinite; }
+    .tbt-buf .lbl { font-size: 11px; fill: var(--muted); }
+    @keyframes tbt-buf-in { 0%,15%{opacity:.15} 45%,90%{opacity:1} 100%{opacity:.15} }
+    @media (prefers-reduced-motion: reduce) { .tbt-buf .px-in { animation: none; opacity: 1; } }
+  `}</style>
+  <rect class="band" x="20" y="55" width="520" height="70" rx="6"/>
+  <line class="road" x1="20" y1="90" x2="540" y2="90"/>
+  <rect class="px-in" x="60" y="62" width="11" height="11" fill="#2f8c54" style="animation-delay:0s"/>
+  <rect class="px-in" x="120" y="104" width="11" height="11" fill="#5a9e5a" style="animation-delay:.3s"/>
+  <rect class="px-in" x="210" y="66" width="11" height="11" fill="#2f8c54" style="animation-delay:.6s"/>
+  <rect class="px-in" x="300" y="108" width="11" height="11" fill="#5a9e5a" style="animation-delay:.9s"/>
+  <rect class="px-in" x="380" y="64" width="11" height="11" fill="#2f8c54" style="animation-delay:1.2s"/>
+  <rect class="px-in" x="450" y="106" width="11" height="11" fill="#5a9e5a" style="animation-delay:1.5s"/>
+  <rect x="60" y="28" width="11" height="11" fill="#9aa6a0"/>
+  <rect x="470" y="140" width="11" height="11" fill="#9aa6a0"/>
+  <text class="lbl" x="80" y="38">pixels outside the band are ignored</text>
+  <text class="lbl" x="20" y="48">25 m each side</text>
+</svg>
+
+## Vegetation, weighted
+
+Inside the buffer, count the Groenkaart pixels by class. Tall green (trees above three metres) counts fully, at weight 1.0. Low green (shrubs and grass) counts at 0.2. Farmland and non-green count for nothing.
+
+A street lined with old planes scores high. A street next to a mown verge barely moves.
+
+```sql title="Vegetation fraction per road"
+SELECT way_id,
+       SUM(pixel_count * weight) / buffer_area_px AS veg_frac
+FROM road_buffers
+JOIN groenkaart_pixels USING (way_id)
+JOIN class_weight USING (class)   -- 1 -> 1.0, 2 -> 0.2
+GROUP BY way_id;
+```
+
+The result is `veg_frac`, the share of the buffer covered by vegetation, weighted so a canopy outweighs a lawn.
+
+## Water and parks
+
+Two more fractions, both from OpenStreetMap. `water_frac` is the share of the buffer inside a water polygon. `park_frac` is the share inside a mapped park.
+
+Three numbers per road now: vegetation, water, park. They need to become one.
+
+## One number: the combine formula
+
+The obvious move is to average the three. The obvious move is wrong.
+
+A street lined with trees should not beat a path through a real park. So vegetation, the cheapest signal, gets capped at half. Parks and water count in full.
+
+The formula is a probabilistic union. Read it as: the chance the strip feels green if each signal is independent.
+
+```python title="combine_green"
+green = 1 - (1 - park) * (1 - water) * (1 - 0.5 * veg)
+```
+
+Drag the three sliders. A fully tree-lined street tops out near 0.5. Add a park and it climbs past it.
+
+<PyDemo
+  title="The combine formula"
+  inputs={[
+    { name: "veg", type: "range", min: 0, max: 100, value: 62, label: "vegetation %" },
+    { name: "water", type: "range", min: 0, max: 100, value: 20, label: "water %" },
+    { name: "park", type: "range", min: 0, max: 100, value: 30, label: "park %" },
+  ]}
+  code={`
+v, w, p = veg / 100, water / 100, park / 100
+green = 1 - (1 - p) * (1 - w) * (1 - 0.5 * v)
+
+if p >= 0.60:
+    cls = "park"
+elif green >= 0.50:
+    cls = "high"
+elif green >= 0.17:
+    cls = "medium"
+else:
+    cls = "low"
+
+print_md(f"vegetation {v:.0%}, water {w:.0%}, park {p:.0%}")
+print_md(f"combined green = {green:.2f}")
+print_md(f"class: {cls}")
+`}
+/>
+
+Set vegetation to 100 and the rest to 0. Green stops at 0.5, and the class is medium. A leafy street, on its own, is never high. That cap is the whole opinion of the score.
+
+## Thresholds turn the number into a class
+
+The score is continuous. The router wants buckets. Four of them.
+
+A road is `park` if its buffer is at least 60 percent inside a mapped park. Otherwise `high` above 0.50, `medium` above 0.17, and `low` below. The cutoffs are not principled. They are tuned to the real distribution, where the median road sits around 0.17 and the 80th percentile around 0.51, to land a roughly 50 / 30 / 20 split of low to medium to higher.
+
+Drag the cutoffs and watch 500 real Antwerp streets move between buckets.
+
+<PyDemo
+  title="Thresholds reshape the city"
+  inputs={[
+    { name: "th_park", type: "range", min: 0, max: 100, value: 60, label: "park cutoff %" },
+    { name: "th_high", type: "range", min: 0, max: 100, value: 50, label: "high cutoff %" },
+    { name: "th_med", type: "range", min: 0, max: 100, value: 17, label: "medium cutoff %" },
+  ]}
+  setup={`
+GREENS = [float(x) for x in "0.06,0.03,0.10,0.36,0.20,0.14,0.01,0.05,0.17,0.13,0.04,0.02,0.07,0.00,0.02,0.18,0.13,0.06,0.19,0.03,0.02,0.46,0.01,0.12,0.75,0.06,0.08,0.07,0.23,0.18,0.46,0.90,0.03,0.22,0.05,0.05,0.02,0.35,0.00,0.15,0.10,0.14,0.37,0.07,0.22,0.38,0.14,0.03,0.30,0.22,0.76,0.02,0.20,0.60,0.03,0.30,0.25,0.49,0.16,0.01,0.08,0.09,0.16,0.85,0.17,0.02,0.59,0.08,0.06,0.01,0.05,0.09,0.20,0.02,0.30,1.00,0.04,0.05,0.67,0.24,0.85,0.03,1.00,0.02,0.02,0.75,0.08,0.01,0.06,0.02,0.07,0.08,0.03,0.39,0.95,0.05,0.07,0.14,0.55,0.00,0.06,0.36,0.01,0.18,0.00,0.23,0.73,0.00,0.04,0.21,0.02,0.00,0.28,0.08,0.46,0.42,0.00,0.01,0.32,0.17,0.02,0.39,0.01,1.00,0.73,0.22,0.92,0.30,0.17,1.00,1.00,0.97,0.00,0.00,0.04,0.04,0.84,0.00,1.00,0.23,0.21,0.56,0.07,0.45,1.00,1.00,0.46,0.00,0.78,0.19,0.00,1.00,0.07,0.44,0.06,0.24,0.28,0.02,0.05,0.15,0.58,0.02,0.14,0.07,0.23,1.00,1.00,0.72,0.01,0.31,1.00,0.04,0.26,0.07,0.00,0.21,0.03,0.10,0.18,0.41,0.99,0.01,0.31,0.04,0.32,0.34,0.04,1.00,0.01,0.17,0.20,0.13,0.10,0.09,0.09,0.45,0.52,0.58,0.00,0.06,0.03,0.19,0.02,0.01,0.72,0.72,0.16,0.03,0.13,0.05,0.05,1.00,0.21,0.08,0.07,0.40,0.25,0.39,0.37,0.15,0.34,0.06,0.00,0.02,0.34,0.29,0.57,1.00,0.45,1.00,0.73,0.14,0.36,0.10,1.00,0.05,0.10,0.18,0.15,0.08,0.72,0.74,0.03,0.02,0.07,0.03,0.02,0.08,0.07,0.94,0.33,0.10,0.03,0.45,0.16,0.34,0.31,0.26,0.25,0.00,0.03,0.16,0.01,0.34,0.04,0.00,0.63,0.42,0.09,0.01,0.05,0.20,0.29,0.02,0.03,0.03,0.39,0.15,0.16,0.67,0.04,0.01,0.61,0.01,0.10,0.35,0.17,0.02,0.22,0.18,0.19,0.28,0.13,0.38,0.42,0.25,0.05,0.18,0.08,0.00,0.02,0.02,0.00,0.03,0.25,0.00,0.24,0.03,0.01,0.04,0.06,0.01,0.38,0.02,0.03,0.19,0.01,0.05,0.37,0.73,0.02,0.64,0.02,0.03,0.16,0.27,0.41,0.13,0.33,0.04,0.79,0.24,0.08,0.66,0.13,0.06,0.05,0.02,1.00,0.24,0.30,0.62,0.19,0.01,0.09,0.44,0.05,0.26,0.04,0.01,0.21,0.14,0.14,0.21,0.38,0.56,0.33,1.00,0.30,0.40,0.07,0.96,1.00,0.61,0.40,0.19,0.00,0.43,0.38,0.41,0.08,0.28,0.13,0.00,0.90,1.00,0.23,0.14,0.22,0.66,0.03,0.67,0.02,0.02,0.59,0.11,0.03,0.00,0.21,0.14,0.03,0.03,0.32,0.05,0.18,0.21,0.09,0.29,0.04,0.03,0.22,0.37,0.05,0.00,0.07,0.06,0.07,0.22,0.11,0.04,0.00,0.22,0.34,0.28,0.78,0.95,0.26,0.02,0.14,0.83,0.02,0.12,0.25,0.00,0.00,0.02,0.01,0.02,0.06,0.45,0.93,0.07,1.00,0.07,0.04,0.28,0.04,0.04,1.00,0.10,0.32,0.02,1.00,0.32,0.05,0.05,0.40,1.00,1.00,0.62,0.00,0.83,0.36,0.02,0.08,1.00,0.01,0.04,0.86,0.01,1.00,0.46,0.01,0.01,0.09,0.54,0.04,0.47,0.00,0.52,0.65,0.85,0.82,0.31,0.86,0.02,0.11,0.69,0.00,0.79,1.00,1.00,0.44,0.60,0.03,1.00,0.61,0.55,0.08,0.35,0.03,0.02,0.08,0.15,0.02,1.00,0.09,0.31,0.39,0.25".split(",")]
+PARKS = [float(x) for x in "0.00,0.00,0.09,0.26,0.12,0.02,0.00,0.00,0.07,0.08,0.00,0.00,0.00,0.00,0.00,0.00,0.03,0.00,0.00,0.00,0.00,0.39,0.00,0.00,0.68,0.00,0.00,0.00,0.13,0.17,0.30,0.80,0.00,0.01,0.04,0.00,0.00,0.21,0.00,0.12,0.00,0.00,0.00,0.04,0.00,0.31,0.07,0.00,0.11,0.01,0.68,0.00,0.00,0.18,0.00,0.00,0.13,0.35,0.09,0.00,0.00,0.00,0.00,0.77,0.08,0.00,0.34,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.19,0.99,0.01,0.00,0.51,0.16,0.75,0.00,1.00,0.00,0.00,0.68,0.04,0.00,0.00,0.00,0.00,0.08,0.00,0.32,0.92,0.00,0.00,0.07,0.42,0.00,0.06,0.24,0.00,0.07,0.00,0.21,0.66,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.38,0.05,0.00,0.00,0.24,0.00,0.00,0.00,0.00,1.00,0.59,0.03,0.92,0.00,0.09,1.00,1.00,0.94,0.00,0.00,0.00,0.01,0.77,0.00,1.00,0.14,0.14,0.28,0.00,0.36,1.00,1.00,0.00,0.00,0.63,0.12,0.00,1.00,0.00,0.41,0.04,0.22,0.17,0.00,0.00,0.07,0.52,0.01,0.07,0.00,0.08,1.00,1.00,0.59,0.00,0.00,1.00,0.00,0.11,0.00,0.00,0.13,0.00,0.00,0.08,0.30,0.99,0.00,0.16,0.01,0.20,0.23,0.00,1.00,0.01,0.02,0.07,0.00,0.09,0.00,0.08,0.38,0.51,0.47,0.00,0.06,0.00,0.06,0.00,0.00,0.51,0.65,0.05,0.00,0.12,0.02,0.00,1.00,0.15,0.00,0.00,0.33,0.12,0.26,0.19,0.06,0.28,0.06,0.00,0.00,0.24,0.21,0.54,1.00,0.00,1.00,0.72,0.00,0.21,0.00,1.00,0.00,0.00,0.02,0.00,0.00,0.65,0.58,0.00,0.00,0.00,0.00,0.00,0.02,0.00,0.93,0.21,0.00,0.00,0.43,0.00,0.14,0.27,0.14,0.21,0.00,0.00,0.00,0.00,0.32,0.00,0.00,0.44,0.00,0.08,0.00,0.01,0.13,0.21,0.00,0.02,0.00,0.36,0.10,0.00,0.62,0.00,0.00,0.56,0.00,0.05,0.29,0.09,0.00,0.16,0.00,0.05,0.24,0.06,0.34,0.28,0.00,0.02,0.11,0.00,0.00,0.00,0.01,0.00,0.00,0.18,0.00,0.19,0.00,0.00,0.00,0.00,0.00,0.27,0.00,0.00,0.13,0.00,0.00,0.23,0.65,0.00,0.54,0.01,0.00,0.10,0.22,0.34,0.00,0.25,0.00,0.72,0.22,0.05,0.55,0.05,0.00,0.00,0.00,1.00,0.13,0.25,0.60,0.15,0.01,0.00,0.42,0.04,0.24,0.00,0.00,0.11,0.07,0.00,0.00,0.00,0.43,0.22,1.00,0.00,0.21,0.05,0.95,1.00,0.46,0.14,0.18,0.00,0.31,0.23,0.16,0.00,0.17,0.00,0.00,0.87,1.00,0.05,0.10,0.00,0.42,0.01,0.37,0.00,0.00,0.46,0.00,0.00,0.00,0.14,0.04,0.02,0.02,0.23,0.00,0.18,0.16,0.00,0.22,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.03,0.00,0.14,0.00,0.00,0.00,0.12,0.31,0.26,0.77,0.95,0.19,0.00,0.07,0.69,0.00,0.06,0.17,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.92,0.02,1.00,0.01,0.00,0.21,0.00,0.00,1.00,0.00,0.13,0.00,1.00,0.29,0.00,0.00,0.00,1.00,1.00,0.60,0.00,0.62,0.19,0.00,0.00,1.00,0.00,0.00,0.80,0.00,1.00,0.31,0.00,0.00,0.01,0.35,0.00,0.26,0.00,0.35,0.00,0.83,0.76,0.12,0.85,0.00,0.05,0.66,0.00,0.74,1.00,1.00,0.23,0.55,0.00,1.00,0.42,0.33,0.07,0.21,0.00,0.00,0.00,0.00,0.00,1.00,0.00,0.22,0.20,0.00".split(",")]
+`}
+  code={`
+tp, th, tm = th_park / 100, th_high / 100, th_med / 100
+counts = {"park": 0, "high": 0, "medium": 0, "low": 0}
+for g, p in zip(GREENS, PARKS):
+    if p >= tp:
+        counts["park"] += 1
+    elif g >= th:
+        counts["high"] += 1
+    elif g >= tm:
+        counts["medium"] += 1
+    else:
+        counts["low"] += 1
+
+n = len(GREENS)
+for k in ["park", "high", "medium", "low"]:
+    print_md(f"{k}: {counts[k]} of {n} ({100 * counts[k] / n:.1f}%)")
+
+plot_hist(GREENS, bins=25, title="combined greenness across 500 sampled streets")
+`}
+/>
+
+At the shipped cutoffs, the full 40,032 roads land at park 13.9 percent, high 5.2, medium 24.7, low 56.2. Most of Antwerp is grey. The green is worth routing toward because it is scarce.
+
+## Bake it into the graph
+
+One last step. Write the class onto each road in the map file, as a tag the router reads: `tbt_green = park | high | medium | low`. The scoring runs once, offline. The router never recomputes it.
+
+Here is the result on the map. The streets are coloured by their class.
+
+<MapEmbed
+  title="Antwerp streets coloured by greenness class"
+  controls="layers"
+  layers={["streets", "parks"]}
+  aspect="16 / 11"
+  caption="Each street's tbt_green class: park, high, medium, low."
+/>
+
+## Limits
+
+The score is a proxy. It reads vegetation off a raster and parks off OpenStreetMap. It does not know a tree is dead, or a park is fenced, or a canal stinks. The 25-metre buffer and the 0.2 and 0.5 weights are choices, not laws. The thresholds are tuned to one city's distribution and would need retuning anywhere else.
+
+## What's next
+
+Every street has a class baked into the map. The next post makes a router prefer the green ones, with a slider you drag to trade minutes for trees.
