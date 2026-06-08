@@ -21,11 +21,13 @@
     "@astrojs/sitemap": "^3.7.2",
     "astro": "^6.3.0",
     "plotly.js-basic-dist-min": "~2.35.3",
-    "pyodide": "~0.27.7"
+    "pyodide": "~0.27.7",
+    "sharp": "^0.34.5"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
       "esbuild",
+      "sharp",
       "workerd"
     ]
   },
