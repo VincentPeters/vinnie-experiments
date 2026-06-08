@@ -9,11 +9,11 @@ description: "How Travel by Trees turns five public datasets into one green map 
 
 import MapEmbed from "../../../components/MapEmbed.astro";
 
-Travel by Trees plans bike routes through Antwerp that prefer parks, trees, and water over the fast grey road. To do this, the app needs to know how green every street is.
+Travel by Trees plans bike routes through Antwerp. The routes prefer parks, trees, and water over the fast grey road. To bias a route toward green, the app needs to know how green every street is.
 
 No open dataset ships a greenness column. You build one.
 
-This post is the first half of the story: where the data comes from. Five public sources, one PostGIS database, one enriched road network. The scoring comes in the next post.
+This post covers the first half: where the data comes from. Five public sources, one PostGIS database, one enriched road network. The scoring comes next.
 
 ## The pipeline at a glance
 
@@ -54,7 +54,7 @@ Five sources flow into PostGIS. One scored road network comes out.
   <text class="out" x="576" y="178" text-anchor="middle">network</text>
 </svg>
 
-The grey arterial and the leafy backstreet look the same in a routing graph. The work below is what tells them apart.
+In a routing graph, the grey arterial and the leafy backstreet look the same. The work below tells them apart.
 
 ## Source 1: OpenStreetMap
 
@@ -95,7 +95,7 @@ OpenStreetMap knows where parks are. It does not know where the trees are.
 
 For that there is the Groenkaart, a one-metre vegetation raster from Agentschap Natuur en Bos. Every pixel holds a class: tall green (trees above three metres), low green (shrubs and grass), farmland, or not green. It uses the Belgian Lambert projection, EPSG:31370, not the lon-lat of OpenStreetMap. That difference matters in the next post.
 
-The web service caps each request at a few thousand pixels per side. Antwerp at one metre is far larger than that. So the fetch tiles the area into 4000-metre squares, downloads each, and stitches them back with `gdalbuildvrt`.
+The web service caps each request at a few thousand pixels per side. Antwerp at one metre is far larger. So the fetch tiles the area into 4000-metre squares, downloads each, and stitches them back with `gdalbuildvrt`.
 
 <svg viewBox="0 0 480 200" xmlns="http://www.w3.org/2000/svg" class="tbt-tiles" role="img" aria-labelledby="tiles-title tiles-desc" style="display:block;max-width:480px;width:100%;height:auto;margin:1.5rem auto;">
   <title id="tiles-title">Tiling the Groenkaart web service</title>
@@ -137,7 +137,7 @@ It is on the map as a layer. It does not steer routes yet. Pretending it did wou
 
 ## The five layers, on the real map
 
-Here is the result. Toggle each layer over Antwerp: the Groenkaart raster, parks, water, the tree dots, and NO2. This is the same map the router reads.
+The result, and the same map the router reads. Toggle each layer over Antwerp: the Groenkaart raster, parks, water, the tree dots, and NO2.
 
 <MapEmbed
   title="Travel by Trees data layers over Antwerp"
