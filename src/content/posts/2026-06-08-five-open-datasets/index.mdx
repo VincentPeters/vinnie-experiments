@@ -20,7 +20,8 @@ This post covers the first half: where the data comes from. Five public sources,
 
 Five sources flow into PostGIS. One scored road network comes out.
 
-<svg viewBox="0 0 640 360" xmlns="http://www.w3.org/2000/svg" class="tbt-flow" role="img" aria-labelledby="flow-title flow-desc" style="display:block;max-width:640px;width:100%;height:auto;margin:1.5rem auto;">
+<figure style="max-width: 640px; margin: var(--s-5) auto;">
+<svg viewBox="0 0 640 360" xmlns="http://www.w3.org/2000/svg" class="tbt-flow" role="img" aria-labelledby="flow-title flow-desc" style="display:block;width:100%;height:auto;">
   <title id="flow-title">The Travel by Trees data pipeline</title>
   <desc id="flow-desc">Five source datasets on the left (OpenStreetMap, Groenkaart raster, parks and water, the tree inventory, and NO2 air quality) feed a PostGIS database in the middle, which outputs a scored road network on the right.</desc>
   <style>{`
@@ -54,6 +55,8 @@ Five sources flow into PostGIS. One scored road network comes out.
   <text class="out" x="576" y="160" text-anchor="middle">scored</text>
   <text class="out" x="576" y="178" text-anchor="middle">network</text>
 </svg>
+  <figcaption>Five open datasets flow into PostGIS and come out as one scored road network.</figcaption>
+</figure>
 
 In a routing graph, the grey arterial and the leafy backstreet look the same. The work below tells them apart.
 
@@ -69,7 +72,8 @@ osmium extract --bbox 4.30,51.15,4.55,51.28 \
   belgium-latest.osm.pbf -o antwerp.pbf
 ```
 
-<svg viewBox="0 0 560 200" xmlns="http://www.w3.org/2000/svg" class="tbt-clip" role="img" aria-labelledby="clip-title clip-desc" style="display:block;max-width:560px;width:100%;height:auto;margin:1.5rem auto;">
+<figure style="max-width: 560px; margin: var(--s-5) auto;">
+<svg viewBox="0 0 560 200" xmlns="http://www.w3.org/2000/svg" class="tbt-clip" role="img" aria-labelledby="clip-title clip-desc" style="display:block;width:100%;height:auto;">
   <title id="clip-title">Clipping Belgium to the Antwerp bounding box</title>
   <desc id="clip-desc">A large box labelled Belgium PBF, 650 megabytes, with a small highlighted inner box labelled Antwerp, 17 megabytes.</desc>
   <style>{`
@@ -87,6 +91,8 @@ osmium extract --bbox 4.30,51.15,4.55,51.28 \
   <rect class="small pulse" x="360" y="60" width="120" height="80" rx="4"/>
   <text class="lbl-a" x="372" y="55">Antwerp · 17 MB</text>
 </svg>
+  <figcaption>The 650 MB Belgium extract, cropped to the Antwerp bounding box: 17 MB.</figcaption>
+</figure>
 
 `complete_ways` keeps roads whole even where they cross the box edge, so a street near the border still routes. From this one file come both the road network and, later, the parks and water.
 
@@ -98,7 +104,8 @@ For that there is the Groenkaart, a one-metre vegetation raster from Agentschap 
 
 The web service caps each request at a few thousand pixels per side. Antwerp at one metre is far larger. So the fetch tiles the area into 4000-metre squares, downloads each, and stitches them back with `gdalbuildvrt`.
 
-<svg viewBox="0 0 480 200" xmlns="http://www.w3.org/2000/svg" class="tbt-tiles" role="img" aria-labelledby="tiles-title tiles-desc" style="display:block;max-width:480px;width:100%;height:auto;margin:1.5rem auto;">
+<figure style="max-width: 480px; margin: var(--s-5) auto;">
+<svg viewBox="0 0 480 200" xmlns="http://www.w3.org/2000/svg" class="tbt-tiles" role="img" aria-labelledby="tiles-title tiles-desc" style="display:block;width:100%;height:auto;">
   <title id="tiles-title">Tiling the Groenkaart web service</title>
   <desc id="tiles-desc">A grid of square tiles fills in one after another to form one mosaic of the Antwerp vegetation raster.</desc>
   <style>{`
@@ -121,6 +128,8 @@ The web service caps each request at a few thousand pixels per side. Antwerp at 
     <rect class="t" x="96" y="96" width="48" height="48" style="animation-delay:2.4s"/>
   </g>
 </svg>
+  <figcaption>The Groenkaart service caps each request, so the fetch downloads tiles and stitches them into one raster.</figcaption>
+</figure>
 
 Loaded into PostGIS with `raster2pgsql`, cut into 256-pixel tiles with a spatial index, the raster becomes something you query per street.
 

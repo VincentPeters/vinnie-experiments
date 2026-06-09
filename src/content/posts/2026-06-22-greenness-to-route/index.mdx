@@ -36,7 +36,8 @@ The score is expensive to work out and never changes between requests. So it is 
 
 The class goes onto each road as a tag, `tbt_green`. BRouter then reads that tagged map and builds its own routing format: binary segment files. A three-step build cuts the map, unifies node positions, and links the ways into segments.
 
-<svg viewBox="0 0 640 130" xmlns="http://www.w3.org/2000/svg" class="tbt-bake" role="img" aria-labelledby="bake-title bake-desc" style="display:block;max-width:640px;width:100%;height:auto;margin:1.5rem auto;">
+<figure style="max-width: 640px; margin: var(--s-5) auto;">
+<svg viewBox="0 0 640 130" xmlns="http://www.w3.org/2000/svg" class="tbt-bake" role="img" aria-labelledby="bake-title bake-desc" style="display:block;width:100%;height:auto;">
   <title id="bake-title">Baking the greenness tag into routing segments</title>
   <desc id="bake-desc">The tagged map file passes through three build steps, OsmFastCutter, PosUnifier, and WayLinker, and becomes a small binary segment file.</desc>
   <style>{`
@@ -61,6 +62,8 @@ The class goes onto each road as a tag, `tbt_green`. BRouter then reads that tag
   <path class="wire flow" d="M478,65 L502,65"/>
   <rect class="box out" x="502" y="45" width="132" height="40" rx="5"/><text class="lbl-out" x="568" y="62" text-anchor="middle">segments</text><text class="lbl-out" x="568" y="78" text-anchor="middle">759 KB</text>
 </svg>
+  <figcaption>The tagged map compiles to one 759 KB binary segment file the router loads once.</figcaption>
+</figure>
 
 A 17 MB map of Antwerp becomes one 759 KB segment file. The router loads it at startup. Every route after that is a graph search over edges it already holds.
 
@@ -79,13 +82,14 @@ carfree -> 0.20   bonus, added at half weight
 
 The discount multiplies the edge cost. A park path at full strength costs a fifth of its grey-road price, so the search bends toward it.
 
-<svg viewBox="0 0 520 150" xmlns="http://www.w3.org/2000/svg" class="tbt-cost" role="img" aria-labelledby="cost-title cost-desc" style="display:block;max-width:520px;width:100%;height:auto;margin:1.5rem auto;">
+<figure style="max-width: 520px; margin: var(--s-5) auto;">
+<svg viewBox="0 0 520 150" xmlns="http://www.w3.org/2000/svg" class="tbt-cost" role="img" aria-labelledby="cost-title cost-desc" style="display:block;width:100%;height:auto;">
   <title id="cost-title">A green discount shrinking an edge cost</title>
   <desc id="cost-desc">Two cost bars. A grey road keeps its full cost. A park road is cut to a fifth.</desc>
   <style>{`
     .tbt-cost text { font-family: var(--font-mono); }
     .tbt-cost .full { fill: var(--ink-muted); }
-    .tbt-cost .cut { fill: var(--signal); animation: tbt-cost-cut 3s ease-in-out infinite; transform-origin: left center; }
+    .tbt-cost .cut { fill: var(--signal); animation: tbt-cost-cut 3s ease-in-out infinite; transform-origin: left center; transform-box: fill-box; }
     .tbt-cost .lbl { font-size: 12px; fill: var(--ink); }
     .tbt-cost .lbl-m { font-size: 11px; fill: var(--ink-muted); }
     @keyframes tbt-cost-cut { 0%,15%{transform:scaleX(1)} 50%,90%{transform:scaleX(0.2)} 100%{transform:scaleX(1)} }
@@ -97,6 +101,8 @@ The discount multiplies the edge cost. A park path at full strength costs a fift
   <rect class="cut" x="120" y="90" width="360" height="22" rx="3"/>
   <text class="lbl-m" x="120" y="132">cost, after the green discount</text>
 </svg>
+  <figcaption>The green discount cuts a park road's cost to a fifth, so the cheapest-path search bends toward it.</figcaption>
+</figure>
 
 One detail worth its own line. The car-free bonus is added at half weight, under the green discount, on purpose. An earlier version let a cranked car-free bonus send routes onto an ungreen but car-free cycleway, in one case the ring road. Greenness has to dominate. Car-free only nudges.
 

@@ -26,7 +26,8 @@ Start with the road. Buffer it by 25 metres. Reproject to the Belgian Lambert gr
 
 Then measure what falls inside.
 
-<svg viewBox="0 0 560 180" xmlns="http://www.w3.org/2000/svg" class="tbt-buf" role="img" aria-labelledby="buf-title buf-desc" style="display:block;max-width:560px;width:100%;height:auto;margin:1.5rem auto;">
+<figure style="max-width: 560px; margin: var(--s-5) auto;">
+<svg viewBox="0 0 560 180" xmlns="http://www.w3.org/2000/svg" class="tbt-buf" role="img" aria-labelledby="buf-title buf-desc" style="display:block;width:100%;height:auto;">
   <title id="buf-title">A 25-metre buffer sampling vegetation pixels</title>
   <desc id="buf-desc">A road line with a band 25 metres to each side. Green pixels inside the band are counted; pixels outside are ignored.</desc>
   <style>{`
@@ -51,6 +52,8 @@ Then measure what falls inside.
   <text class="lbl" x="80" y="38">pixels outside the band are ignored</text>
   <text class="lbl" x="20" y="48">25 m each side</text>
 </svg>
+  <figcaption>A 25-metre buffer around the road. Green pixels inside it count. Pixels outside do not.</figcaption>
+</figure>
 
 ## Vegetation, weighted
 
