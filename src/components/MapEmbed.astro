@@ -48,11 +48,11 @@ const isVideoPoster = poster ? /\.(webm|mp4|mov)$/i.test(poster) : false;
               <circle cx="112" cy="10" r="3.5" fill="var(--signal)" />
             </svg>
             <span class="map-embed-ph-title">{title}</span>
-            <span class="meta">interactive map · loads on scroll</span>
           </div>
         )
       }
     </div>
+    <button class="map-embed-load" data-map-embed-load type="button">load interactive map</button>
   </div>
   <figcaption class="meta">
     {caption ?? title} · <a href={embedSrc} target="_blank" rel="noopener">open full map ↗</a>
@@ -104,6 +104,34 @@ const isVideoPoster = poster ? /\.(webm|mp4|mov)$/i.test(poster) : false;
   .map-embed-ph-title {
     font-weight: 700;
     color: var(--ink);
+  }
+  .map-embed-load {
+    position: absolute;
+    left: 50%;
+    bottom: var(--s-3);
+    transform: translateX(-50%);
+    z-index: 2;
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--paper);
+    background: var(--signal);
+    border: 0;
+    border-radius: 999px;
+    padding: 0.5rem 1.1rem;
+    cursor: pointer;
+    box-shadow: 0 2px 12px rgb(0 0 0 / 0.28);
+  }
+  .map-embed-load:hover,
+  .map-embed-load:focus-visible {
+    background: var(--signal-deep);
+  }
+  .map-embed-load:disabled {
+    opacity: 0.85;
+    cursor: default;
+  }
+  .map-embed-load[hidden] {
+    display: none;
   }
   .map-embed figcaption {
     margin-top: var(--s-2);

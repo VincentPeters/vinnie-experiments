@@ -1,18 +1,18 @@
 import { test, expect } from "@playwright/test";
 
-// The embed iframe must NOT exist on first paint (zero-JS-friendly), and must be
-// injected once the embed scrolls into view, pointing at the computed /embed URL.
-test("MapEmbed lazy-loads the iframe on scroll with the right src", async ({ page }) => {
+// The embed iframe must NOT exist on page load (zero-JS-friendly, no broken
+// cross-origin frame), and must be injected when the reader clicks "load
+// interactive map", pointing at the computed /embed URL.
+test("MapEmbed loads the iframe on button click with the right src", async ({ page }) => {
   await page.goto("/map-embed-test");
 
   const stage = page.locator("[data-map-embed]");
   await expect(stage).toHaveAttribute("data-embed-src", /\/en\/embed\?/);
 
-  // Nothing loaded yet.
+  // Nothing loaded until the reader asks for it.
   await expect(stage.locator("iframe")).toHaveCount(0);
 
-  // Scroll it into view -> the island injects the iframe.
-  await stage.scrollIntoViewIfNeeded();
+  await page.locator("[data-map-embed-load]").click();
 
   const iframe = stage.locator("iframe");
   await expect(iframe).toHaveCount(1, { timeout: 5000 });
@@ -20,7 +20,6 @@ test("MapEmbed lazy-loads the iframe on scroll with the right src", async ({ pag
   const src = await iframe.getAttribute("src");
   expect(src).toContain("/en/embed");
   expect(src).toContain("controls=layers");
-  // URLSearchParams encodes the comma in the layer list.
   expect(src).toContain("layers=parks%2Ctrees");
 });
 

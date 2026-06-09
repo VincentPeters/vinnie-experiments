@@ -1,45 +1,55 @@
 // src/components/MapEmbedIsland.ts
-// Lazy-load the travelbytrees map iframe when an embed scrolls into view.
-// Mirrors PyDemoIsland's IntersectionObserver approach so text pages stay
-// zero-JS except where an interactive map actually appears. The poster (a
-// looping webm or a placeholder) covers the load gap and stays beneath the
-// iframe as a fallback if the embed never paints (e.g. backend offline).
+// Click-to-load the travelbytrees map iframe. The poster (a real map image) is
+// the always-visible default; the button upgrades to the live interactive embed
+// on demand. Click-to-load, not autoload: the embed is a cross-origin iframe
+// whose `load` event fires even when the frame is blocked or 404s, so there is
+// no reliable cross-origin success signal to gate an automatic reveal on. The
+// poster plus the caption's "open full map" link cover the case where the
+// backend is unavailable.
 
 function mount(root: HTMLElement): void {
   const src = root.dataset.embedSrc;
   const frame = root.querySelector<HTMLElement>("[data-map-embed-frame]");
   const poster = root.querySelector<HTMLElement>("[data-map-embed-poster]");
-  if (!src || !frame) return;
+  const btn = root.querySelector<HTMLButtonElement>("[data-map-embed-load]");
+  if (!src || !frame || !btn) return;
 
-  let loaded = false;
-  const load = () => {
-    if (loaded) return;
-    loaded = true;
+  const idle = "load interactive map";
+  let loading = false;
+
+  btn.addEventListener("click", () => {
+    if (loading) return;
+    loading = true;
+    btn.textContent = "loading the map…";
+    btn.disabled = true;
+
     const iframe = document.createElement("iframe");
     iframe.src = src;
-    iframe.loading = "lazy";
     iframe.title = root.dataset.embedTitle ?? "Interactive map";
-    iframe.style.width = "100%";
-    iframe.style.height = "100%";
-    iframe.style.border = "0";
-    // Once the embed paints, drop the poster. If it errors we keep the poster
-    // visible underneath so the reader still sees something meaningful.
-    iframe.addEventListener("load", () => poster?.setAttribute("hidden", ""));
+    iframe.loading = "eager";
+    iframe.style.cssText =
+      "width:100%;height:100%;border:0;opacity:0;transition:opacity .35s ease";
     frame.appendChild(iframe);
-  };
 
-  const obs = new IntersectionObserver(
-    (entries) => {
-      for (const e of entries) {
-        if (e.isIntersecting) {
-          load();
-          obs.disconnect();
-        }
-      }
-    },
-    { rootMargin: "200px" },
-  );
-  obs.observe(root);
+    let settled = false;
+    iframe.addEventListener("load", () => {
+      if (settled) return;
+      settled = true;
+      iframe.style.opacity = "1";
+      poster?.setAttribute("hidden", "");
+      btn.hidden = true;
+    });
+
+    // If the frame never loads at all, restore the button so the reader can
+    // retry, and drop the dead iframe so the poster stays visible.
+    window.setTimeout(() => {
+      if (settled) return;
+      iframe.remove();
+      btn.disabled = false;
+      btn.textContent = idle;
+      loading = false;
+    }, 12000);
+  });
 }
 
 document
