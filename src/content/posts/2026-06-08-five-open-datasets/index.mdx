@@ -7,6 +7,7 @@ bucket: A
 description: "How Travel by Trees turns five public datasets into one green map of Antwerp: OpenStreetMap, the Groenkaart vegetation raster, parks and water, the tree inventory, and air quality."
 ---
 
+import PyDemo from "../../../components/PyDemo.astro";
 import MapEmbed from "../../../components/MapEmbed.astro";
 
 Travel by Trees plans bike routes through Antwerp. The routes prefer parks, trees, and water over the fast grey road. To bias a route toward green, the app needs to know how green every street is.
@@ -122,6 +123,34 @@ The web service caps each request at a few thousand pixels per side. Antwerp at 
 </svg>
 
 Loaded into PostGIS with `raster2pgsql`, cut into 256-pixel tiles with a spatial index, the raster becomes something you query per street.
+
+### What the raster holds
+
+The raster sorts Antwerp into four classes over 252 million classified pixels. Most of the city is not green at all. Toggle what you count as green and watch the coverage move.
+
+<PyDemo
+  title="Green coverage of Antwerp, by class"
+  inputs={[
+    { name: "tall", type: "checkbox", value: true, label: "tall green (trees over 3 m)" },
+    { name: "low", type: "checkbox", value: true, label: "low green (shrubs, grass)" },
+    { name: "farm", type: "checkbox", value: false, label: "farmland" },
+  ]}
+  code={`
+classes = [
+    ("tall green", 21.5, tall),
+    ("low green", 16.2, low),
+    ("farmland", 10.6, farm),
+    ("non-green (built)", 51.7, False),
+]
+print_md("share of classified Antwerp, by Groenkaart class:")
+for name, pct, _ in classes:
+    print_md(f"{name}: {pct:.1f}%")
+green = sum(pct for _, pct, on in classes if on)
+print_md(f"counted as green: {green:.1f}% of the city")
+`}
+/>
+
+A fifth of Antwerp is tall canopy. Over half is built surface. That scarcity is why the next post weights tall green fully and low green at a fifth, and why a green route is worth planning at all.
 
 ## Sources 3 and 4: parks, water, and 104,000 trees
 
