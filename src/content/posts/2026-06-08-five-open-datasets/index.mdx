@@ -24,13 +24,13 @@ Five sources flow into PostGIS. One scored road network comes out.
   <title id="flow-title">The Travel by Trees data pipeline</title>
   <desc id="flow-desc">Five source datasets on the left (OpenStreetMap, Groenkaart raster, parks and water, the tree inventory, and NO2 air quality) feed a PostGIS database in the middle, which outputs a scored road network on the right.</desc>
   <style>{`
-    .tbt-flow text { font-family: var(--font); }
-    .tbt-flow .box { fill: var(--subtle); stroke: var(--muted); stroke-width: 1.5; }
-    .tbt-flow .db { fill: var(--fg); }
-    .tbt-flow .lbl { font-size: 12px; fill: var(--fg); }
-    .tbt-flow .lbl-on { font-size: 13px; font-weight: 700; fill: var(--bg); }
-    .tbt-flow .out { font-size: 13px; font-weight: 700; fill: var(--bg); }
-    .tbt-flow .wire { stroke: var(--accent); stroke-width: 1.5; fill: none; stroke-dasharray: 5 4; }
+    .tbt-flow text { font-family: var(--font-mono); }
+    .tbt-flow .box { fill: var(--paper-subtle); stroke: var(--ink-muted); stroke-width: 1.5; }
+    .tbt-flow .db { fill: var(--ink); }
+    .tbt-flow .lbl { font-size: 12px; fill: var(--ink); }
+    .tbt-flow .lbl-on { font-size: 13px; font-weight: 700; fill: var(--paper); }
+    .tbt-flow .out { font-size: 13px; font-weight: 700; fill: var(--paper); }
+    .tbt-flow .wire { stroke: var(--signal); stroke-width: 1.5; fill: none; stroke-dasharray: 5 4; }
     .tbt-flow .flow { animation: tbt-flow-dash 1.6s linear infinite; }
     @keyframes tbt-flow-dash { to { stroke-dashoffset: -18; } }
     @media (prefers-reduced-motion: reduce) { .tbt-flow .flow { animation: none; } }
@@ -73,12 +73,12 @@ osmium extract --bbox 4.30,51.15,4.55,51.28 \
   <title id="clip-title">Clipping Belgium to the Antwerp bounding box</title>
   <desc id="clip-desc">A large box labelled Belgium PBF, 650 megabytes, with a small highlighted inner box labelled Antwerp, 17 megabytes.</desc>
   <style>{`
-    .tbt-clip text { font-family: var(--font); }
-    .tbt-clip .big { fill: var(--subtle); stroke: var(--muted); stroke-width: 1.5; }
-    .tbt-clip .small { fill: none; stroke: var(--accent); stroke-width: 2; }
+    .tbt-clip text { font-family: var(--font-mono); }
+    .tbt-clip .big { fill: var(--paper-subtle); stroke: var(--ink-muted); stroke-width: 1.5; }
+    .tbt-clip .small { fill: none; stroke: var(--signal); stroke-width: 2; }
     .tbt-clip .pulse { animation: tbt-clip-pulse 2.4s ease-in-out infinite; }
-    .tbt-clip .lbl { font-size: 12px; fill: var(--muted); }
-    .tbt-clip .lbl-a { font-size: 12px; font-weight: 700; fill: var(--accent); }
+    .tbt-clip .lbl { font-size: 12px; fill: var(--ink-muted); }
+    .tbt-clip .lbl-a { font-size: 12px; font-weight: 700; fill: var(--signal); }
     @keyframes tbt-clip-pulse { 0%,100% { opacity: .5; } 50% { opacity: 1; } }
     @media (prefers-reduced-motion: reduce) { .tbt-clip .pulse { animation: none; opacity: 1; } }
   `}</style>
@@ -102,9 +102,9 @@ The web service caps each request at a few thousand pixels per side. Antwerp at 
   <title id="tiles-title">Tiling the Groenkaart web service</title>
   <desc id="tiles-desc">A grid of square tiles fills in one after another to form one mosaic of the Antwerp vegetation raster.</desc>
   <style>{`
-    .tbt-tiles text { font-family: var(--font); }
-    .tbt-tiles rect.t { fill: var(--accent); stroke: var(--bg); stroke-width: 2; opacity: 0; animation: tbt-tile-in 4s linear infinite; }
-    .tbt-tiles .lbl { font-size: 12px; fill: var(--muted); }
+    .tbt-tiles text { font-family: var(--font-mono); }
+    .tbt-tiles rect.t { fill: var(--signal); stroke: var(--paper); stroke-width: 2; opacity: 0; animation: tbt-tile-in 4s linear infinite; }
+    .tbt-tiles .lbl { font-size: 12px; fill: var(--ink-muted); }
     @keyframes tbt-tile-in { 0% { opacity: 0; } 40%,95% { opacity: .55; } 100% { opacity: 0; } }
     @media (prefers-reduced-motion: reduce) { .tbt-tiles rect.t { animation: none; opacity: .55; } }
   `}</style>

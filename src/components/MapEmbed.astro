@@ -41,11 +41,11 @@ const isVideoPoster = poster ? /\.(webm|mp4|mov)$/i.test(poster) : false;
         ) : (
           <div class="map-embed-ph">
             <svg viewBox="0 0 120 60" width="120" height="60" aria-hidden="true">
-              <rect x="14" y="8" width="40" height="26" rx="3" fill="var(--accent)" opacity="0.18" />
-              <rect x="66" y="28" width="44" height="24" rx="3" fill="var(--accent)" opacity="0.14" />
-              <path d="M8,52 L34,32 L70,28 L112,10" fill="none" stroke="var(--accent)" stroke-width="2.5" />
-              <circle cx="8" cy="52" r="3.5" fill="var(--fg)" />
-              <circle cx="112" cy="10" r="3.5" fill="var(--accent)" />
+              <rect x="14" y="8" width="40" height="26" rx="3" fill="var(--signal)" opacity="0.18" />
+              <rect x="66" y="28" width="44" height="24" rx="3" fill="var(--signal)" opacity="0.14" />
+              <path d="M8,52 L34,32 L70,28 L112,10" fill="none" stroke="var(--signal)" stroke-width="2.5" />
+              <circle cx="8" cy="52" r="3.5" fill="var(--ink)" />
+              <circle cx="112" cy="10" r="3.5" fill="var(--signal)" />
             </svg>
             <span class="map-embed-ph-title">{title}</span>
             <span class="meta">interactive map · loads on scroll</span>
@@ -73,9 +73,9 @@ const isVideoPoster = poster ? /\.(webm|mp4|mov)$/i.test(poster) : false;
   .map-embed-stage {
     position: relative;
     width: 100%;
-    border: 1px solid var(--muted);
+    border: 1px solid var(--ink-muted);
     overflow: hidden;
-    background: var(--subtle);
+    background: var(--paper-subtle);
   }
   .map-embed-frame,
   .map-embed-poster {
@@ -103,7 +103,7 @@ const isVideoPoster = poster ? /\.(webm|mp4|mov)$/i.test(poster) : false;
   }
   .map-embed-ph-title {
     font-weight: 700;
-    color: var(--fg);
+    color: var(--ink);
   }
   .map-embed figcaption {
     margin-top: var(--s-2);

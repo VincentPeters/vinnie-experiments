@@ -40,13 +40,13 @@ The class goes onto each road as a tag, `tbt_green`. BRouter then reads that tag
   <title id="bake-title">Baking the greenness tag into routing segments</title>
   <desc id="bake-desc">The tagged map file passes through three build steps, OsmFastCutter, PosUnifier, and WayLinker, and becomes a small binary segment file.</desc>
   <style>{`
-    .tbt-bake text { font-family: var(--font); }
-    .tbt-bake .box { fill: var(--subtle); stroke: var(--muted); stroke-width: 1.5; }
-    .tbt-bake .step { fill: var(--bg); stroke: var(--accent); stroke-width: 1.5; }
-    .tbt-bake .out { fill: var(--fg); }
-    .tbt-bake .lbl { font-size: 11px; fill: var(--fg); }
-    .tbt-bake .lbl-out { font-size: 12px; font-weight: 700; fill: var(--bg); }
-    .tbt-bake .wire { stroke: var(--accent); stroke-width: 1.5; fill: none; stroke-dasharray: 5 4; }
+    .tbt-bake text { font-family: var(--font-mono); }
+    .tbt-bake .box { fill: var(--paper-subtle); stroke: var(--ink-muted); stroke-width: 1.5; }
+    .tbt-bake .step { fill: var(--paper); stroke: var(--signal); stroke-width: 1.5; }
+    .tbt-bake .out { fill: var(--ink); }
+    .tbt-bake .lbl { font-size: 11px; fill: var(--ink); }
+    .tbt-bake .lbl-out { font-size: 12px; font-weight: 700; fill: var(--paper); }
+    .tbt-bake .wire { stroke: var(--signal); stroke-width: 1.5; fill: none; stroke-dasharray: 5 4; }
     .tbt-bake .flow { animation: tbt-bake-dash 1.6s linear infinite; }
     @keyframes tbt-bake-dash { to { stroke-dashoffset: -18; } }
     @media (prefers-reduced-motion: reduce) { .tbt-bake .flow { animation: none; } }
@@ -83,11 +83,11 @@ The discount multiplies the edge cost. A park path at full strength costs a fift
   <title id="cost-title">A green discount shrinking an edge cost</title>
   <desc id="cost-desc">Two cost bars. A grey road keeps its full cost. A park road is cut to a fifth.</desc>
   <style>{`
-    .tbt-cost text { font-family: var(--font); }
-    .tbt-cost .full { fill: var(--muted); }
-    .tbt-cost .cut { fill: var(--accent); animation: tbt-cost-cut 3s ease-in-out infinite; transform-origin: left center; }
-    .tbt-cost .lbl { font-size: 12px; fill: var(--fg); }
-    .tbt-cost .lbl-m { font-size: 11px; fill: var(--muted); }
+    .tbt-cost text { font-family: var(--font-mono); }
+    .tbt-cost .full { fill: var(--ink-muted); }
+    .tbt-cost .cut { fill: var(--signal); animation: tbt-cost-cut 3s ease-in-out infinite; transform-origin: left center; }
+    .tbt-cost .lbl { font-size: 12px; fill: var(--ink); }
+    .tbt-cost .lbl-m { font-size: 11px; fill: var(--ink-muted); }
     @keyframes tbt-cost-cut { 0%,15%{transform:scaleX(1)} 50%,90%{transform:scaleX(0.2)} 100%{transform:scaleX(1)} }
     @media (prefers-reduced-motion: reduce) { .tbt-cost .cut { animation: none; transform: scaleX(0.2); } }
   `}</style>

@@ -30,11 +30,11 @@ Then measure what falls inside.
   <title id="buf-title">A 25-metre buffer sampling vegetation pixels</title>
   <desc id="buf-desc">A road line with a band 25 metres to each side. Green pixels inside the band are counted; pixels outside are ignored.</desc>
   <style>{`
-    .tbt-buf text { font-family: var(--font); }
-    .tbt-buf .band { fill: var(--accent); opacity: 0.10; }
-    .tbt-buf .road { stroke: var(--fg); stroke-width: 2.5; }
+    .tbt-buf text { font-family: var(--font-mono); }
+    .tbt-buf .band { fill: var(--signal); opacity: 0.10; }
+    .tbt-buf .road { stroke: var(--ink); stroke-width: 2.5; }
     .tbt-buf .px-in { animation: tbt-buf-in 3.2s ease-in-out infinite; }
-    .tbt-buf .lbl { font-size: 11px; fill: var(--muted); }
+    .tbt-buf .lbl { font-size: 11px; fill: var(--ink-muted); }
     @keyframes tbt-buf-in { 0%,15%{opacity:.15} 45%,90%{opacity:1} 100%{opacity:.15} }
     @media (prefers-reduced-motion: reduce) { .tbt-buf .px-in { animation: none; opacity: 1; } }
   `}</style>
